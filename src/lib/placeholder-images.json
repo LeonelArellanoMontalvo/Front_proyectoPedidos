@@ -1,3 +1,70 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "dish-1",
+      "description": "placeholder image for a dish",
+      "imageUrl": "https://images.unsplash.com/photo-1676300184390-04ddf405d4f0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxnb3VybWV0JTIwZGlzaHxlbnwwfHx8fDE3NjQ3Mjc1NTF8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "gourmet dish"
+    },
+    {
+      "id": "dish-2",
+      "description": "placeholder image for a dish",
+      "imageUrl": "https://images.unsplash.com/photo-1556761223-4c4282c73f77?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxwYXN0YXxlbnwwfHx8fDE3NjQ3NTY2OTV8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "pasta"
+    },
+    {
+      "id": "dish-3",
+      "description": "placeholder image for a dish",
+      "imageUrl": "https://images.unsplash.com/photo-1646487793655-bbf280273d2f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxzYWxhZCUyMGJvd2x8ZW58MHx8fHwxNzY0NzIzMTQ4fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "salad bowl"
+    },
+    {
+      "id": "dish-4",
+      "description": "placeholder image for a dish",
+      "imageUrl": "https://images.unsplash.com/photo-1593560708920-61dd98c46a4e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxwaXp6YXxlbnwwfHx8fDE3NjQ3MjQxMjJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "pizza"
+    },
+    {
+      "id": "dish-5",
+      "description": "placeholder image for a dish",
+      "imageUrl": "https://images.unsplash.com/photo-1470324161839-ce2bb6fa6bc3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxzb3VwfGVufDB8fHx8MTc2NDc3MzM1NHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "soup"
+    },
+    {
+      "id": "dish-6",
+      "description": "placeholder image for a dish",
+      "imageUrl": "https://images.unsplash.com/photo-1678408854004-2f931669eccd?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8ZGVzc2VydCUyMGNha2V8ZW58MHx8fHwxNzY0NzQ1NzY4fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "dessert cake"
+    },
+    {
+      "id": "dish-7",
+      "description": "placeholder image for a dish",
+      "imageUrl": "https://images.unsplash.com/photo-1695606452803-6708a37d3836?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8c2VhZm9vZCUyMHBsYXR0ZXJ8ZW58MHx8fHwxNzY0NzcwNDcwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "seafood platter"
+    },
+    {
+      "id": "dish-8",
+      "description": "placeholder image for a dish",
+      "imageUrl": "https://images.unsplash.com/photo-1657143378288-44ab2fbd2312?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8Z3JpbGxlZCUyMHN0ZWFrfGVufDB8fHx8MTc2NDcyODg2MXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "grilled steak"
+    },
+    {
+      "id": "user-avatar-1",
+      "description": "placeholder for user avatar",
+      "imageUrl": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8cGVyc29uJTIwc21pbGluZ3xlbnwwfHx8fDE3NjQ3MDYyMzZ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "person smiling"
+    },
+    {
+      "id": "user-avatar-2",
+      "description": "placeholder for user avatar",
+      "imageUrl": "https://images.unsplash.com/photo-1580489944761-15a19d654956?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHx3b21hbiUyMHBvcnRyYWl0fGVufDB8fHx8MTc2NDcwNjIzNXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "woman portrait"
+    },
+    {
+      "id": "user-avatar-3",
+      "description": "placeholder for user avatar",
+      "imageUrl": "https://images.unsplash.com/photo-1556157382-97eda2d62296?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxtYW4lMjBwcm9mZXNzaW9uYWx8ZW58MHx8fHwxNzY0NzE0NTYzfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "man professional"
+    }
+  ]
 }
