@@ -20,11 +20,16 @@ import placeholderData from '@/lib/placeholder-images.json';
 
 const userAvatars = placeholderData.placeholderImages.filter(p => p.description.includes('avatar'));
 
-const getAvatarForUser = (cedula: string) => {
+const getAvatarForUser = (userId: string) => {
   if (!userAvatars.length) return null;
-  // A simple way to get a consistent index for a given cedula
-  const numericCedula = parseInt(cedula.replace(/\D/g, '')) || 0;
-  const index = numericCedula % userAvatars.length;
+  // A simple way to get a consistent index for a given id
+  let hash = 0;
+  for (let i = 0; i < userId.length; i++) {
+    const char = userId.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  const index = Math.abs(hash) % userAvatars.length;
   return userAvatars[index];
 }
 
@@ -33,7 +38,7 @@ export default function Header() {
   const { isAuthenticated, user, logout, isAdmin } = useAuth();
 
   const userInitial = user?.nombre?.[0]?.toUpperCase() || 'U';
-  const userAvatar = user ? getAvatarForUser(user.cedula) : null;
+  const userAvatar = user ? getAvatarForUser(user.email) : null;
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">

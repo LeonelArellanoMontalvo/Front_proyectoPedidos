@@ -28,12 +28,9 @@ import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/logo";
 
 const formSchema = z.object({
-  cedula: z.string().length(10, { message: "La cédula debe tener 10 dígitos." }),
   nombre: z.string().min(2, { message: "El nombre es requerido." }),
   apellido: z.string().min(2, { message: "El apellido es requerido." }),
-  telefono: z.string().min(7, { message: "El teléfono no es válido." }),
   email: z.string().email({ message: "Por favor, ingresa un correo válido." }),
-  direccion_principal: z.string().min(5, { message: "La dirección es requerida." }),
   contrasena: z.string().min(6, { message: "La contraseña debe tener al menos 6 caracteres." }),
 });
 
@@ -45,33 +42,38 @@ export default function RegisterPage() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      cedula: "",
       nombre: "",
       apellido: "",
-      telefono: "",
       email: "",
-      direccion_principal: "",
       contrasena: "",
     },
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    const success = await register(values);
+    // The API implementation for register is pending
+    // For now, we show a toast message.
+    // const success = await register(values);
     setIsLoading(false);
 
-    if (success) {
-      toast({
-        title: "¡Registro Exitoso!",
-        description: "Tu cuenta ha sido creada. ¡Bienvenido!",
-      });
-    } else {
-      toast({
+    toast({
         variant: "destructive",
-        title: "Error en el registro",
-        description: "El correo electrónico o la cédula ya están en uso.",
-      });
-    }
+        title: "Función no implementada",
+        description: "El registro de usuarios aún no está conectado a la API.",
+    });
+    
+    // if (success) {
+    //   toast({
+    //     title: "¡Registro Exitoso!",
+    //     description: "Tu cuenta ha sido creada. ¡Bienvenido!",
+    //   });
+    // } else {
+    //   toast({
+    //     variant: "destructive",
+    //     title: "Error en el registro",
+    //     description: "El correo electrónico o la cédula ya están en uso.",
+    //   });
+    // }
   }
 
   return (
@@ -96,18 +98,9 @@ export default function RegisterPage() {
                 <FormField control={form.control} name="apellido" render={({ field }) => (
                   <FormItem><FormLabel>Apellido</FormLabel><FormControl><Input placeholder="Tu apellido" {...field} /></FormControl><FormMessage /></FormItem>
                 )}/>
-                 <FormField control={form.control} name="cedula" render={({ field }) => (
-                  <FormItem><FormLabel>Cédula</FormLabel><FormControl><Input placeholder="1234567890" {...field} /></FormControl><FormMessage /></FormItem>
-                )}/>
-                <FormField control={form.control} name="telefono" render={({ field }) => (
-                  <FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input placeholder="0991234567" {...field} /></FormControl><FormMessage /></FormItem>
-                )}/>
               </div>
               <FormField control={form.control} name="email" render={({ field }) => (
                 <FormItem><FormLabel>Correo Electrónico</FormLabel><FormControl><Input placeholder="tu@correo.com" {...field} /></FormControl><FormMessage /></FormItem>
-              )}/>
-              <FormField control={form.control} name="direccion_principal" render={({ field }) => (
-                <FormItem><FormLabel>Dirección</FormLabel><FormControl><Input placeholder="Tu dirección de entrega" {...field} /></FormControl><FormMessage /></FormItem>
               )}/>
               <FormField control={form.control} name="contrasena" render={({ field }) => (
                 <FormItem><FormLabel>Contraseña</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl><FormMessage /></FormItem>

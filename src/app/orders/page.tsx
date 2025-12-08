@@ -24,7 +24,10 @@ function getStatusVariant(status: Order['estado_pedido']) {
 export default function OrdersPage() {
   const { user } = useAuth();
   
-  const userOrders = user ? allOrders.filter(o => o.usuario_cedula === user.cedula).sort((a, b) => new Date(b.fecha_pedido).getTime() - new Date(a.fecha_pedido).getTime()) : [];
+  // Logic to filter orders will need to be updated when API is connected
+  // The current mock data uses `usuario_cedula`, but the new User type doesn't have `cedula`.
+  // For now, let's show all orders for any logged in user for demonstration.
+  const userOrders = user ? allOrders.sort((a, b) => new Date(b.fecha_pedido).getTime() - new Date(a.fecha_pedido).getTime()) : [];
 
   return (
     <ProtectedRoute allowedRoles={['CLIENTE']}>

@@ -21,17 +21,23 @@ import placeholderData from '@/lib/placeholder-images.json';
 
 const userAvatars = placeholderData.placeholderImages.filter(p => p.description.includes('avatar'));
 
-const getAvatarForUser = (cedula: string) => {
+const getAvatarForUser = (userId: string) => {
   if (!userAvatars.length) return { imageUrl: '', imageHint: '' };
-  // A simple way to get a consistent index for a given cedula
-  const numericCedula = parseInt(cedula.replace(/\D/g, '')) || 0;
-  const index = numericCedula % userAvatars.length;
+  let hash = 0;
+  for (let i = 0; i < userId.length; i++) {
+    const char = userId.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  const index = Math.abs(hash) % userAvatars.length;
   return userAvatars[index];
 }
 
 
 export default function AdminCustomersPage() {
-    const [customers, setCustomers] = useState<User[]>(mockUsers.filter(u => u.rol_id === 1));
+    // This component will need to be updated to fetch real data
+    // and adapt to the new User type.
+    const [customers, setCustomers] = useState(mockUsers.filter(u => u.rol_id === 1));
     const { toast } = useToast();
     
     const toggleCustomerStatus = (cedula: string) => {
@@ -63,7 +69,7 @@ export default function AdminCustomersPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Clientes Registrados</CardTitle>
+          <CardTitle>Clientes Registrados (Datos de Prueba)</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>

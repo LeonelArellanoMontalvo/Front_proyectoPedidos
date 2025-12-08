@@ -5,15 +5,14 @@ export interface Role {
 }
 
 export interface User {
-  cedula: string;
-  rol_id: number;
+  cedula?: string; // Optional for now
+  rol: { nombre: 'CLIENTE' | 'ADMINISTRADOR' };
   nombre: string;
   apellido?: string;
   telefono?: string;
   email: string;
-  direccion_principal: string;
-  contrasena_hash: string;
-  estado: 'ACTIVO' | 'INACTIVO';
+  direccion_principal?: string; // Optional for now
+  estado?: 'ACTIVO' | 'INACTIVO'; // Optional for now
 }
 
 export interface Dish {

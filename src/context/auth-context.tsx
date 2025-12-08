@@ -3,14 +3,15 @@
 import { createContext, useContext, ReactNode, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import type { User } from '@/lib/types';
-import { usuarios } from '@/lib/mock-data';
+import { usuarios as mockUsers } from '@/lib/mock-data';
 import { useLocalStorage } from '@/hooks/use-local-storage';
+import axios from 'axios';
 
 interface AuthContextType {
   user: User | null;
   login: (email: string, pass: string) => Promise<boolean>;
   logout: () => void;
-  register: (userData: Omit<User, 'rol_id' | 'estado' | 'contrasena_hash'> & { contrasena: string }) => Promise<boolean>;
+  register: (userData: Omit<User, 'rol'>) => Promise<boolean>;
   isAuthenticated: boolean;
   isAdmin: boolean;
 }
@@ -19,57 +20,82 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useLocalStorage<User | null>('user', null);
+  const [token, setToken] = useLocalStorage<string | null>('access_token', null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    if (user) {
+    if (user && token) {
       setIsAuthenticated(true);
-      setIsAdmin(user.rol_id === 2); // 2 is ADMIN
+      setIsAdmin(user.rol.nombre === 'ADMINISTRADOR');
     } else {
       setIsAuthenticated(false);
       setIsAdmin(false);
     }
-  }, [user]);
+  }, [user, token]);
 
   const login = async (email: string, pass: string): Promise<boolean> => {
-    const foundUser = usuarios.find(u => u.email === email && u.contrasena_hash === pass);
-    if (foundUser && foundUser.estado === 'ACTIVO') {
-      setUser(foundUser);
-      if (foundUser.rol_id === 2) {
-        router.push('/admin/orders');
-      } else {
-        router.push('/');
+    const LOGIN_MUTATION = `
+      mutation UserLogin($loginInput: LoginInput!) {
+        login(loginInput: $loginInput) {
+          access_token
+          user {
+            nombre
+            apellido
+            email
+            rol {
+              nombre
+            }
+          }
+        }
       }
-      return true;
+    `;
+
+    try {
+      const response = await axios.post(
+        'https://foodapp-g0jx.onrender.com/graphql', 
+        {
+          query: LOGIN_MUTATION,
+          variables: {
+            loginInput: { email, password: pass },
+          },
+        }
+      );
+
+      const apiData = response.data.data;
+
+      if (apiData?.login) {
+        const { access_token, user: apiUser } = apiData.login;
+        setToken(access_token);
+        setUser(apiUser);
+        
+        if (apiUser.rol.nombre === 'ADMINISTRADOR') {
+          router.push('/admin/orders');
+        } else {
+          router.push('/');
+        }
+        return true;
+      } else {
+        console.error("GraphQL login error:", response.data.errors);
+        return false;
+      }
+    } catch (error) {
+      console.error('Error al iniciar sesión:', error);
+      return false;
     }
-    return false;
   };
 
   const logout = () => {
     setUser(null);
+    setToken(null);
     router.push('/login');
   };
 
-  const register = async (userData: Omit<User, 'rol_id' | 'estado' | 'contrasena_hash'> & { contrasena: string }): Promise<boolean> => {
-    const existingUser = usuarios.find(u => u.email === userData.email || u.cedula === userData.cedula);
-    if (existingUser) {
-      return false; // User already exists
-    }
-
-    const newUser: User = {
-      ...userData,
-      rol_id: 1, // CLIENTE
-      estado: 'ACTIVO',
-      contrasena_hash: userData.contrasena, // Should be hashed
-    };
-    
-    // In a real app, this would be an API call
-    usuarios.push(newUser); 
-    setUser(newUser);
-    router.push('/');
-    return true;
+  const register = async (userData: Omit<User, 'rol'>): Promise<boolean> => {
+    // This will be implemented later
+    console.log("Register function not implemented with API yet.", userData);
+    return false;
   };
 
   const value = { user, login, logout, register, isAuthenticated, isAdmin };

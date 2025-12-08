@@ -24,14 +24,14 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
         return;
       }
       
-      const userRole = isAdmin ? 'ADMINISTRADOR' : 'CLIENTE';
-      if (!allowedRoles.includes(userRole)) {
+      const userRole = user?.rol.nombre;
+      if (!userRole || !allowedRoles.includes(userRole)) {
         router.push(isAdmin ? "/admin" : "/");
       }
     }
-  }, [isAuthenticated, isAdmin, allowedRoles, router, isAuthStatusKnown]);
+  }, [isAuthenticated, isAdmin, user, allowedRoles, router, isAuthStatusKnown]);
 
-  if (!isAuthStatusKnown || !isAuthenticated || (user && !allowedRoles.includes(isAdmin ? 'ADMINISTRADOR' : 'CLIENTE'))) {
+  if (!isAuthStatusKnown || !isAuthenticated || (user && (!user.rol.nombre || !allowedRoles.includes(user.rol.nombre)))) {
     return (
         <div className="container mx-auto px-4 py-8 space-y-4">
             <Skeleton className="h-12 w-1/4" />
