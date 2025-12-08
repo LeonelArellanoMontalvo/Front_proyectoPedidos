@@ -3,7 +3,6 @@
 import { createContext, useContext, ReactNode, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import type { User } from '@/lib/types';
-import { usuarios as mockUsers } from '@/lib/mock-data';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import axios from 'axios';
 
@@ -11,7 +10,7 @@ interface AuthContextType {
   user: User | null;
   login: (email: string, pass: string) => Promise<boolean>;
   logout: () => void;
-  register: (userData: Omit<User, 'rol'>) => Promise<boolean>;
+  register: (userData: Omit<User, 'rol' | 'estado'> & { contrasena: string }) => Promise<boolean>;
   isAuthenticated: boolean;
   isAdmin: boolean;
 }
@@ -68,7 +67,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (apiData?.login) {
         const { access_token, user: apiUser } = apiData.login;
         setToken(access_token);
-        setUser(apiUser);
+        // We need to complete the user object with mock data for fields not returned by login
+        // This is a temporary measure until the API provides all necessary fields.
+        setUser({
+          ...apiUser,
+          cedula: '0000000000', // Placeholder
+          telefono: '000000000', // Placeholder
+          direccion_principal: 'N/A', // Placeholder
+        });
         
         if (apiUser.rol.nombre === 'ADMINISTRADOR') {
           router.push('/admin/orders');
@@ -92,10 +98,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     router.push('/login');
   };
 
-  const register = async (userData: Omit<User, 'rol'>): Promise<boolean> => {
-    // This will be implemented later
-    console.log("Register function not implemented with API yet.", userData);
-    return false;
+  const register = async (userData: Omit<User, 'rol' | 'estado'> & { contrasena: string }): Promise<boolean> => {
+    const CREATE_USER_MUTATION = `
+      mutation RegisterUser($createUsuarioInput: CreateUsuarioInput!) {
+        register(createUsuarioInput: $createUsuarioInput) {
+          cedula
+          email
+          nombre
+          rol {
+            nombre
+          }
+        }
+      }
+    `;
+  
+    try {
+      const response = await axios.post('https://foodapp-g0jx.onrender.com/graphql', {
+        query: CREATE_USER_MUTATION,
+        variables: {
+          createUsuarioInput: {
+            cedula: userData.cedula,
+            nombre: userData.nombre,
+            apellido: userData.apellido,
+            telefono: userData.telefono,
+            email: userData.email,
+            password: userData.contrasena,
+            direccionPrincipal: userData.direccion_principal,
+            rolId: 1, // Hardcoded to 1 for CLIENTE
+          },
+        },
+      });
+  
+      const apiData = response.data;
+  
+      if (apiData.errors) {
+        console.error("GraphQL registration error:", apiData.errors);
+        return false;
+      } else if (apiData.data?.register) {
+        router.push('/login');
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error al registrar usuario:', error);
+      return false;
+    }
   };
 
   const value = { user, login, logout, register, isAuthenticated, isAdmin };

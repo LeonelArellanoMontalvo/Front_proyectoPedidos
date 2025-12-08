@@ -5,13 +5,13 @@ export interface Role {
 }
 
 export interface User {
-  cedula?: string; // Optional for now
+  cedula: string; 
   rol: { nombre: 'CLIENTE' | 'ADMINISTRADOR' };
   nombre: string;
-  apellido?: string;
-  telefono?: string;
+  apellido: string;
+  telefono: string;
   email: string;
-  direccion_principal?: string; // Optional for now
+  direccion_principal: string;
   estado?: 'ACTIVO' | 'INACTIVO'; // Optional for now
 }
 
