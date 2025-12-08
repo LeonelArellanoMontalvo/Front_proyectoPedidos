@@ -53,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       const response = await axios.post(
-        'https://foodapp-g0jx.onrender.com/graphql', 
+        '/graphql', 
         {
           query: LOGIN_MUTATION,
           variables: {
@@ -113,7 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     `;
   
     try {
-      const response = await axios.post('https://foodapp-g0jx.onrender.com/graphql', {
+      const response = await axios.post('/graphql', {
         query: CREATE_USER_MUTATION,
         variables: {
           createUsuarioInput: {

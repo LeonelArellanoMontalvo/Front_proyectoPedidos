@@ -30,6 +30,14 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async rewrites() {
+    return [
+      {
+        source: '/graphql',
+        destination: 'https://foodapp-g0jx.onrender.com/graphql',
+      },
+    ]
+  },
 };
 
 export default nextConfig;
