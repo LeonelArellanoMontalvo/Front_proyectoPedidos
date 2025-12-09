@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from 'next/link';
@@ -19,6 +20,26 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import axios from 'axios';
+
+const CREATE_PEDIDO_MUTATION = `
+  mutation CreatePedido($createPedidoInput: CreatePedidoInput!) {
+    createPedido(createPedidoInput: $createPedidoInput) {
+      id
+      usuarioCedula
+      montoTotal
+    }
+  }
+`;
+
+const CREATE_DETALLE_PEDIDO_MUTATION = `
+  mutation CreateDetallePedido($createDetallePedidoInput: CreateDetallePedidoInput!) {
+    createDetallePedido(createDetallePedidoInput: $createDetallePedidoInput) {
+      id
+    }
+  }
+`;
+
 
 export function Cart() {
   const { cartItems, removeFromCart, updateQuantity, cartTotal, cartCount, clearCart } = useCart();
@@ -26,21 +47,75 @@ export function Cart() {
   const { toast } = useToast();
   const router = useRouter();
   const [isClient, setIsClient] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
 
 
-  const handleSubmitOrder = () => {
-    // This is where you would call the API to create the order
-    console.log("Submitting order for user:", user?.email, { items: cartItems, total: cartTotal });
-    toast({
-      title: "¡Pedido Enviado!",
-      description: "Tu pedido ha sido recibido y está siendo procesado.",
-    });
-    clearCart();
-    router.push('/orders');
+  const handleSubmitOrder = async () => {
+    if (!user) {
+        toast({ variant: "destructive", title: "Error", description: "Debes iniciar sesión para hacer un pedido." });
+        return;
+    }
+    setIsSubmitting(true);
+
+    try {
+        // 1. Create the main order
+        const pedidoResponse = await axios.post('/graphql', {
+            query: CREATE_PEDIDO_MUTATION,
+            variables: {
+                createPedidoInput: {
+                    usuarioCedula: user.cedula,
+                    tipoEntrega: "Delivery", // Defaulting to Delivery for now
+                    direccionEntrega: user.direccionPrincipal,
+                    montoTotal: cartTotal,
+                    estadoPedido: "Pendiente"
+                }
+            }
+        });
+
+        const createdPedido = pedidoResponse.data.data?.createPedido;
+        if (!createdPedido || !createdPedido.id) {
+            throw new Error("No se pudo crear el pedido.");
+        }
+        
+        const pedidoId = createdPedido.id;
+
+        // 2. Create order details for each item in the cart
+        for (const item of cartItems) {
+            await axios.post('/graphql', {
+                query: CREATE_DETALLE_PEDIDO_MUTATION,
+                variables: {
+                    createDetallePedidoInput: {
+                        pedidoId: pedidoId,
+                        itemId: item.id,
+                        cantidad: item.quantity,
+                        precioUnitario: item.precio,
+                        subtotal: item.precio * item.quantity
+                    }
+                }
+            });
+        }
+
+        toast({
+            title: "¡Pedido Enviado!",
+            description: "Tu pedido ha sido recibido y está siendo procesado.",
+        });
+        clearCart();
+        router.push('/orders');
+
+    } catch (error) {
+        console.error("Error al enviar el pedido:", error);
+        toast({
+            variant: "destructive",
+            title: "Error al enviar pedido",
+            description: "No se pudo completar el pedido. Inténtalo de nuevo."
+        });
+    } finally {
+        setIsSubmitting(false);
+    }
   }
 
   return (
@@ -111,9 +186,9 @@ export function Cart() {
                   <span>${cartTotal.toFixed(2)}</span>
                 </div>
                 {isAuthenticated ? (
-                  <SheetClose asChild>
-                    <Button onClick={handleSubmitOrder}>Enviar Pedido</Button>
-                  </SheetClose>
+                  <Button onClick={handleSubmitOrder} disabled={isSubmitting}>
+                    {isSubmitting ? "Enviando..." : "Enviar Pedido"}
+                  </Button>
                 ) : (
                   <div className='text-center space-y-3 rounded-lg border-2 border-dashed border-primary/50 bg-accent/20 p-4'>
                     <div className='flex items-center justify-center gap-2 text-primary font-semibold'>
@@ -146,7 +221,9 @@ export function Cart() {
               Agrega platillos del menú para empezar.
             </p>
             <SheetClose asChild>
-                <Button>Ver Menú</Button>
+                <Button asChild>
+                    <Link href="/">Ver Menú</Link>
+                </Button>
             </SheetClose>
           </div>
         )}

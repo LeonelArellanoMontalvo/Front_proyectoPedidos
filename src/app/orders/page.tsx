@@ -1,16 +1,44 @@
+
 "use client";
 
+import { useEffect, useState } from 'react';
+import axios from 'axios';
 import { useAuth } from "@/context/auth-context";
-import { pedidos as allOrders } from "@/lib/mock-data";
-import { platillos as allDishes } from "@/lib/mock-data";
 import type { Order } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import ProtectedRoute from "@/components/protected-route";
 import { History } from "lucide-react";
+import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 
-function getStatusVariant(status: Order['estado_pedido']) {
+const GET_PEDIDOS_QUERY = `
+  query {
+    pedidos {
+      id
+      usuarioCedula
+      tipoEntrega
+      direccionEntrega
+      montoTotal
+      estadoPedido
+      estado
+      fechaPedido
+      detalles {
+        id
+        cantidad
+        precioUnitario
+        subtotal
+        platillo {
+          id
+          nombreItem
+        }
+      }
+    }
+  }
+`;
+
+function getStatusVariant(status: Order['estadoPedido']) {
     switch (status) {
         case 'Pendiente': return 'secondary';
         case 'Autorizado': return 'default';
@@ -23,11 +51,32 @@ function getStatusVariant(status: Order['estado_pedido']) {
 
 export default function OrdersPage() {
   const { user } = useAuth();
+  const [userOrders, setUserOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
   
-  // Logic to filter orders will need to be updated when API is connected
-  // The current mock data uses `usuario_cedula`, but the new User type doesn't have `cedula`.
-  // For now, let's show all orders for any logged in user for demonstration.
-  const userOrders = user ? allOrders.sort((a, b) => new Date(b.fecha_pedido).getTime() - new Date(a.fecha_pedido).getTime()) : [];
+  useEffect(() => {
+    const fetchOrders = async () => {
+        if (!user) return;
+        setLoading(true);
+        try {
+            const response = await axios.post('/graphql', { query: GET_PEDIDOS_QUERY });
+            const allOrders = response.data.data?.pedidos || [];
+            const filteredOrders = allOrders.filter((order: Order) => order.usuarioCedula === user.cedula);
+            setUserOrders(filteredOrders.sort((a: Order, b: Order) => new Date(b.fechaPedido).getTime() - new Date(a.fechaPedido).getTime()));
+        } catch (error) {
+            console.error("Error fetching orders:", error);
+            toast({
+                variant: "destructive",
+                title: "Error al cargar pedidos",
+                description: "No se pudieron obtener los datos de la API.",
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+    fetchOrders();
+  }, [user, toast]);
 
   return (
     <ProtectedRoute allowedRoles={['CLIENTE']}>
@@ -40,42 +89,43 @@ export default function OrdersPage() {
           </div>
         </div>
         
-        {userOrders.length > 0 ? (
+        {loading ? (
+             <div className="space-y-6">
+                <Skeleton className="h-48 w-full" />
+                <Skeleton className="h-48 w-full" />
+             </div>
+        ) : userOrders.length > 0 ? (
           <div className="space-y-6">
             {userOrders.map(order => (
-              <Card key={order.pedido_id}>
+              <Card key={order.id}>
                 <CardHeader>
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                    <CardTitle>Pedido #{order.pedido_id}</CardTitle>
-                    <Badge variant={getStatusVariant(order.estado_pedido)} className="mt-2 sm:mt-0">{order.estado_pedido}</Badge>
+                    <CardTitle>Pedido #{order.id}</CardTitle>
+                    <Badge variant={getStatusVariant(order.estadoPedido)} className="mt-2 sm:mt-0">{order.estadoPedido}</Badge>
                   </div>
                   <CardDescription>
-                    Fecha: {new Date(order.fecha_pedido).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}
+                    Fecha: {new Date(order.fechaPedido).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <p className="font-semibold mb-2">Detalles del pedido:</p>
                   <ul className="space-y-2">
-                    {order.detalles.map(detail => {
-                      // This logic needs to be updated. `allDishes` is now empty and has a different structure.
-                      // const dish = allDishes.find(d => d.id === detail.item_id);
-                      return (
-                        <li key={detail.detalle_id} className="flex justify-between items-center text-sm">
-                          <span>{detail.cantidad}x Platillo ID: {detail.item_id}</span>
+                    {order.detalles.map(detail => (
+                        <li key={detail.id} className="flex justify-between items-center text-sm">
+                          <span>{detail.cantidad}x {detail.platillo.nombreItem}</span>
                           <span>${detail.subtotal.toFixed(2)}</span>
                         </li>
-                      );
-                    })}
+                    ))}
                   </ul>
                   <Separator className="my-4" />
                    <div className="text-sm">
-                        <p><strong>Tipo de Entrega:</strong> {order.tipo_entrega}</p>
-                        {order.tipo_entrega === 'Delivery' && <p><strong>Dirección:</strong> {order.direccion_entrega}</p>}
+                        <p><strong>Tipo de Entrega:</strong> {order.tipoEntrega}</p>
+                        {order.tipoEntrega === 'Delivery' && <p><strong>Dirección:</strong> {order.direccionEntrega}</p>}
                    </div>
                 </CardContent>
                 <CardFooter className="bg-muted/50 p-4 rounded-b-lg">
                   <div className="w-full flex justify-end items-center font-bold text-lg">
-                    <span>Total: ${order.monto_total.toFixed(2)}</span>
+                    <span>Total: ${order.montoTotal.toFixed(2)}</span>
                   </div>
                 </CardFooter>
               </Card>

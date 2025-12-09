@@ -1,3 +1,4 @@
+
 "use client";
 
 import { createContext, useContext, ReactNode, useState, useEffect } from 'react';
@@ -40,10 +41,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login(loginInput: $loginInput) {
           access_token
           user {
+            cedula
             nombre
             apellido
             email
+            telefono
+            direccionPrincipal
             rol {
+              id
               nombre
             }
           }
@@ -67,14 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (apiData?.login) {
         const { access_token, user: apiUser } = apiData.login;
         setToken(access_token);
-        // We need to complete the user object with mock data for fields not returned by login
-        // This is a temporary measure until the API provides all necessary fields.
-        setUser({
-          ...apiUser,
-          cedula: '0000000000', // Placeholder
-          telefono: '000000000', // Placeholder
-          direccion_principal: 'N/A', // Placeholder
-        });
+        setUser(apiUser);
         
         if (apiUser.rol.nombre === 'ADMINISTRADOR') {
           router.push('/admin/orders');
@@ -98,7 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     router.push('/login');
   };
 
-  const register = async (userData: Omit<User, 'rol' | 'estado'> & { contrasena: string }): Promise<boolean> => {
+  const register = async (userData: Omit<User, 'rol' | 'estado' | 'direccionPrincipal' | 'cedula' | 'telefono'> & { contrasena: string, direccion_principal: string, cedula: string, telefono: string }): Promise<boolean> => {
     const CREATE_USER_MUTATION = `
       mutation RegisterUser($createUsuarioInput: CreateUsuarioInput!) {
         register(createUsuarioInput: $createUsuarioInput) {

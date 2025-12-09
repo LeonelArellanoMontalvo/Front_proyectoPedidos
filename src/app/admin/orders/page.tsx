@@ -1,6 +1,8 @@
+
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
 import {
   Table,
   TableBody,
@@ -20,10 +22,39 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ClipboardList } from 'lucide-react';
 import type { Order } from '@/lib/types';
-import { pedidos as mockPedidos } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
 
-function getStatusVariant(status: Order['estado_pedido']) {
+const GET_PEDIDOS_QUERY = `
+  query {
+    pedidos {
+      id
+      usuarioCedula
+      tipoEntrega
+      direccionEntrega
+      montoTotal
+      estadoPedido
+      estado
+      fechaPedido
+      usuario {
+        cedula
+        nombre
+        email
+      }
+      detalles {
+        id
+        cantidad
+        precioUnitario
+        subtotal
+        platillo {
+          id
+          nombreItem
+        }
+      }
+    }
+  }
+`;
+
+function getStatusVariant(status: Order['estadoPedido']) {
     switch (status) {
         case 'Pendiente': return 'secondary';
         case 'Autorizado': return 'default';
@@ -35,13 +66,37 @@ function getStatusVariant(status: Order['estado_pedido']) {
 }
 
 export default function AdminOrdersPage() {
-  const [orders, setOrders] = useState<Order[]>(mockPedidos.sort((a, b) => new Date(b.fecha_pedido).getTime() - new Date(a.fecha_pedido).getTime()));
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
+  const fetchOrders = async () => {
+    setLoading(true);
+    try {
+        const response = await axios.post('/graphql', { query: GET_PEDIDOS_QUERY });
+        const allOrders = response.data.data?.pedidos || [];
+        setOrders(allOrders.sort((a: Order, b: Order) => new Date(b.fechaPedido).getTime() - new Date(a.fechaPedido).getTime()));
+    } catch (error) {
+        console.error("Error fetching orders:", error);
+        toast({
+            variant: "destructive",
+            title: "Error al cargar pedidos",
+            description: "No se pudieron obtener los datos de la API.",
+        });
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
   const handleStatusChange = (orderId: number, newStatus: "Pendiente" | "Autorizado") => {
+    // This will need a mutation later
     setOrders(currentOrders =>
       currentOrders.map(order =>
-        order.pedido_id === orderId ? { ...order, estado_pedido: newStatus } : order
+        order.id === orderId ? { ...order, estadoPedido: newStatus } : order
       )
     );
     toast({
@@ -69,7 +124,7 @@ export default function AdminOrdersPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Pedido ID</TableHead>
-                <TableHead>Cédula Cliente</TableHead>
+                <TableHead>Cliente</TableHead>
                 <TableHead>Fecha</TableHead>
                 <TableHead>Total</TableHead>
                 <TableHead>Estado Actual</TableHead>
@@ -77,22 +132,28 @@ export default function AdminOrdersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {orders.map((order) => (
-                <TableRow key={order.pedido_id}>
-                  <TableCell className="font-medium">#{order.pedido_id}</TableCell>
-                  <TableCell>{order.usuario_cedula}</TableCell>
-                  <TableCell>{new Date(order.fecha_pedido).toLocaleDateString()}</TableCell>
-                  <TableCell>${order.monto_total.toFixed(2)}</TableCell>
+              {loading ? (
+                <TableRow>
+                    <TableCell colSpan={6} className="h-24 text-center">
+                        Cargando pedidos...
+                    </TableCell>
+                </TableRow>
+              ) : orders.map((order) => (
+                <TableRow key={order.id}>
+                  <TableCell className="font-medium">#{order.id}</TableCell>
+                  <TableCell>{order.usuario?.nombre || order.usuarioCedula}</TableCell>
+                  <TableCell>{new Date(order.fechaPedido).toLocaleDateString()}</TableCell>
+                  <TableCell>${order.montoTotal.toFixed(2)}</TableCell>
                   <TableCell>
-                    <Badge variant={getStatusVariant(order.estado_pedido)}>{order.estado_pedido}</Badge>
+                    <Badge variant={getStatusVariant(order.estadoPedido)}>{order.estadoPedido}</Badge>
                   </TableCell>
                   <TableCell className="text-right">
                     <Select
-                      value={order.estado_pedido}
+                      value={order.estadoPedido}
                       onValueChange={(value: "Pendiente" | "Autorizado") =>
-                        handleStatusChange(order.pedido_id, value)
+                        handleStatusChange(order.id, value)
                       }
-                      disabled={order.estado_pedido === 'Entregado' || order.estado_pedido === 'Cancelado'}
+                      disabled={order.estadoPedido === 'Entregado' || order.estadoPedido === 'Cancelado'}
                     >
                       <SelectTrigger className="w-[150px] ml-auto">
                         <SelectValue placeholder="Cambiar estado" />

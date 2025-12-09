@@ -1,5 +1,8 @@
+
 "use client";
 
+import { useState, useEffect } from 'react';
+import axios from 'axios';
 import {
   Table,
   TableBody,
@@ -12,12 +15,30 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, UserCheck, UserX } from 'lucide-react';
 import type { User } from '@/lib/types';
-import { usuarios as mockUsers } from '@/lib/mock-data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useState } from 'react';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import placeholderData from '@/lib/placeholder-images.json';
+import { Skeleton } from '@/components/ui/skeleton';
+
+
+const GET_USUARIOS_QUERY = `
+  query {
+    usuarios {
+      cedula
+      nombre
+      apellido
+      email
+      telefono
+      direccionPrincipal
+      estado
+      rol {
+        id
+        nombre
+      }
+    }
+  }
+`;
 
 const userAvatars = placeholderData.placeholderImages.filter(p => p.description.includes('avatar'));
 
@@ -35,12 +56,36 @@ const getAvatarForUser = (userId: string) => {
 
 
 export default function AdminCustomersPage() {
-    // This component will need to be updated to fetch real data
-    // and adapt to the new User type.
-    const [customers, setCustomers] = useState(mockUsers.filter(u => u.rol_id === 1));
+    const [customers, setCustomers] = useState<User[]>([]);
+    const [loading, setLoading] = useState(true);
     const { toast } = useToast();
     
+    const fetchCustomers = async () => {
+        setLoading(true);
+        try {
+            const response = await axios.post('/graphql', { query: GET_USUARIOS_QUERY });
+            const allUsers = response.data.data?.usuarios || [];
+            // Filter for users with CLIENTE role
+            const clientUsers = allUsers.filter((user: User) => user.rol.nombre === 'CLIENTE');
+            setCustomers(clientUsers);
+        } catch (error) {
+            console.error("Error fetching customers:", error);
+            toast({
+                variant: "destructive",
+                title: "Error al cargar clientes",
+                description: "No se pudieron obtener los datos de la API.",
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchCustomers();
+    }, []);
+
     const toggleCustomerStatus = (cedula: string) => {
+        // This will need a mutation later
         setCustomers(currentCustomers => 
             currentCustomers.map(customer => {
                 if (customer.cedula === cedula) {
@@ -69,7 +114,7 @@ export default function AdminCustomersPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Clientes Registrados (Datos de Prueba)</CardTitle>
+          <CardTitle>Clientes Registrados</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -84,7 +129,13 @@ export default function AdminCustomersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {customers.map((customer) => {
+              {loading ? (
+                 <TableRow>
+                  <TableCell colSpan={6} className="h-24 text-center">
+                    Cargando clientes...
+                  </TableCell>
+                </TableRow>
+              ) : customers.map((customer) => {
                 const avatar = getAvatarForUser(customer.cedula);
                 return (
                 <TableRow key={customer.cedula}>
@@ -96,7 +147,7 @@ export default function AdminCustomersPage() {
                         </Avatar>
                         <div>
                             <p>{customer.nombre} {customer.apellido}</p>
-                            <p className='text-xs text-muted-foreground'>{customer.direccion_principal}</p>
+                            <p className='text-xs text-muted-foreground'>{customer.direccionPrincipal}</p>
                         </div>
                     </div>
                   </TableCell>

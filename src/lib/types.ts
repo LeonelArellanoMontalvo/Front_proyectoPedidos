@@ -1,18 +1,19 @@
+
 export interface Role {
-  rol_id: number;
-  nombre_rol: 'CLIENTE' | 'ADMINISTRADOR';
-  estado: 'ACTIVO' | 'INACTIVO';
+  id: number;
+  nombre: 'CLIENTE' | 'ADMINISTRADOR';
+  estado?: 'ACTIVO' | 'INACTIVO';
 }
 
 export interface User {
-  cedula: string; 
-  rol: { nombre: 'CLIENTE' | 'ADMINISTRADOR' };
+  cedula: string;
+  rol: Role;
   nombre: string;
   apellido: string;
   telefono: string;
   email: string;
-  direccion_principal: string;
-  estado?: 'ACTIVO' | 'INACTIVO'; // Optional for now
+  direccionPrincipal: string; // Corresponds to direccion_principal
+  estado?: 'ACTIVO' | 'INACTIVO';
 }
 
 export interface Dish {
@@ -26,26 +27,33 @@ export interface Dish {
 }
 
 export interface Order {
-  pedido_id: number;
-  usuario_cedula: string;
-  fecha_pedido: string;
-  estado_pedido: 'Pendiente' | 'Autorizado' | 'Enviado' | 'Entregado' | 'Cancelado';
-  tipo_entrega: string;
-  direccion_entrega: string;
-  monto_total: number;
+  id: number;
+  usuarioCedula: string;
+  fechaPedido: string;
+  estadoPedido: 'Pendiente' | 'Autorizado' | 'Enviado' | 'Entregado' | 'Cancelado';
+  tipoEntrega: string;
+  direccionEntrega: string;
+  montoTotal: number;
   estado: 'ACTIVO' | 'INACTIVO';
   detalles: OrderDetail[];
+  usuario?: {
+      cedula: string;
+      nombre: string;
+      email: string;
+  }
 }
 
 export interface OrderDetail {
-  detalle_id: number;
-  pedido_id: number;
-  item_id: number;
+  id: number;
   cantidad: number;
-  precio_unitario: number;
+  precioUnitario: number;
   subtotal: number;
-  notas_adicionales?: string;
-  estado: 'ACTIVO' | 'INACTIVO';
+  notasAdicionales?: string;
+  platillo: {
+      id: number;
+      nombreItem: string;
+      precio: number;
+  }
 }
 
 export interface CartItem extends Dish {

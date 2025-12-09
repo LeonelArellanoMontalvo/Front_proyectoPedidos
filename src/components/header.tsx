@@ -1,7 +1,8 @@
+
 "use client";
 
 import Link from 'next/link';
-import { ShoppingCart, LogIn, UserPlus, LogOut, Shield, History } from 'lucide-react';
+import { LogIn, UserPlus, LogOut, Shield, History } from 'lucide-react';
 
 import { useAuth } from '@/context/auth-context';
 import { Button } from '@/components/ui/button';
