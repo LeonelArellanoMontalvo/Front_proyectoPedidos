@@ -23,22 +23,19 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Input } from './ui/input';
 
-const CREATE_PEDIDO_MUTATION = `
-  mutation CreatePedido($createPedidoInput: CreatePedidoInput!) {
+const CREATE_PEDIDO_MAESTRO_DETALLE_MUTATION = `
+  mutation CreatePedidoMaestroDetalle($createPedidoInput: CreatePedidoInput!) {
     createPedido(createPedidoInput: $createPedidoInput) {
       id
+      montoTotal
+      detalles {
+        id
+        itemId
+        subtotal
+      }
     }
   }
 `;
-
-const CREATE_DETALLE_PEDIDO_MUTATION = `
-  mutation CreateDetallePedido($createDetallePedidoInput: CreateDetallePedidoInput!) {
-    createDetallePedido(createDetallePedidoInput: $createDetallePedidoInput) {
-      id
-    }
-  }
-`;
-
 
 export function Cart() {
   const { cartItems, removeFromCart, updateQuantity, updateNotes, cartTotal, cartCount, clearCart } = useCart();
@@ -61,44 +58,32 @@ export function Cart() {
     setIsSubmitting(true);
 
     try {
-        // 1. Create the main order
-        const pedidoResponse = await axios.post('/graphql', {
-            query: CREATE_PEDIDO_MUTATION,
-            variables: {
-                createPedidoInput: {
-                    usuarioCedula: user.cedula,
-                    tipoEntrega: "Delivery", // Defaulting to Delivery for now
-                    direccionEntrega: user.direccionPrincipal,
-                    montoTotal: cartTotal,
-                    estadoPedido: "Pendiente"
-                }
-            }
+        const detalles = cartItems.map(item => ({
+            itemId: item.id,
+            cantidad: item.quantity,
+            precioUnitario: item.precio,
+            subtotal: item.precio * item.quantity,
+            notasAdicionales: item.notasAdicionales || null
+        }));
+
+        const createPedidoInput = {
+            usuarioCedula: user.cedula,
+            tipoEntrega: "Delivery", // Defaulting to Delivery for now
+            direccionEntrega: user.direccionPrincipal,
+            montoTotal: cartTotal,
+            estadoPedido: "Pendiente",
+            detalles: detalles
+        };
+
+        const response = await axios.post('/graphql', {
+            query: CREATE_PEDIDO_MAESTRO_DETALLE_MUTATION,
+            variables: { createPedidoInput }
         });
 
-        const createdPedido = pedidoResponse.data.data?.createPedido;
+        const createdPedido = response.data.data?.createPedido;
         if (!createdPedido || !createdPedido.id) {
-            const errorMessage = pedidoResponse.data.errors?.[0]?.message || "No se pudo crear el pedido.";
+            const errorMessage = response.data.errors?.[0]?.message || "No se pudo crear el pedido.";
             throw new Error(errorMessage);
-        }
-        
-        const pedidoId = createdPedido.id;
-
-        // 2. Create order details for each item in the cart
-        for (const item of cartItems) {
-            const detalleInput: any = {
-                pedidoId: pedidoId,
-                itemId: item.id,
-                cantidad: item.quantity,
-                precioUnitario: item.precio,
-                subtotal: item.precio * item.quantity
-            };
-            if (item.notasAdicionales) {
-                detalleInput.notasAdicionales = item.notasAdicionales;
-            }
-            await axios.post('/graphql', {
-                query: CREATE_DETALLE_PEDIDO_MUTATION,
-                variables: { createDetallePedidoInput: detalleInput }
-            });
         }
 
         toast({
