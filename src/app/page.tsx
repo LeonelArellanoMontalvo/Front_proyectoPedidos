@@ -1,13 +1,10 @@
 import { DishCard } from '@/components/dish-card';
 import { platillos as allDishes } from '@/lib/mock-data';
-import placeholderData from '@/lib/placeholder-images.json';
 import type { Dish } from '@/lib/types';
 
 export default function Home() {
   const activeDishes: Dish[] = allDishes.filter((dish) => dish.disponible && dish.estado === 'ACTIVO');
   
-  const dishImages = placeholderData.placeholderImages.filter(p => p.description.includes('dish'));
-
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="text-center mb-12">
@@ -16,12 +13,10 @@ export default function Home() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-        {activeDishes.map((dish, index) => (
+        {activeDishes.map((dish) => (
           <DishCard 
             key={dish.item_id} 
             dish={dish} 
-            imageUrl={dishImages[index % dishImages.length]?.imageUrl}
-            imageHint={dishImages[index % dishImages.length]?.imageHint}
           />
         ))}
       </div>

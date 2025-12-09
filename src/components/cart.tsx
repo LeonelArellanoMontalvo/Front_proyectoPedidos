@@ -1,6 +1,5 @@
 "use client";
 
-import Image from 'next/image';
 import Link from 'next/link';
 import { ShoppingCart, Plus, Minus, X, AlertCircle } from 'lucide-react';
 import { useCart } from '@/context/cart-context';
@@ -19,20 +18,6 @@ import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import placeholderData from '@/lib/placeholder-images.json';
-
-const dishImages = placeholderData.placeholderImages.filter(p => p.description.includes('dish'));
-
-const getImageForDish = (dishId: number) => {
-    if (!dishImages.length) return { imageUrl: '', imageHint: '' };
-    // Use item_id to get a consistent image, trying to match by ID first.
-    const specificImage = dishImages.find(p => p.id === `dish-${dishId}`);
-    if (specificImage) {
-        return specificImage;
-    }
-    // Fallback to a deterministic modulo operation if no direct match is found.
-    return dishImages[dishId % dishImages.length];
-}
 
 export function Cart() {
   const { cartItems, removeFromCart, updateQuantity, cartTotal, cartCount, clearCart } = useCart();
@@ -71,20 +56,9 @@ export function Cart() {
         {cartItems.length > 0 ? (
           <>
             <ScrollArea className="flex-1">
-              <div className="flex flex-col gap-4 p-6 pr-6">
-                {cartItems.map((item) => {
-                  const image = getImageForDish(item.item_id);
-                  return (
+              <div className="flex flex-col gap-6 p-6 pr-6">
+                {cartItems.map((item) => (
                   <div key={item.item_id} className="flex items-start gap-4">
-                    <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-md">
-                      <Image
-                        src={image.imageUrl}
-                        alt={item.nombre_item}
-                        fill
-                        className="object-cover"
-                        data-ai-hint={image.imageHint}
-                      />
-                    </div>
                     <div className="flex-1">
                       <h4 className="font-semibold">{item.nombre_item}</h4>
                       <p className="text-sm text-muted-foreground">
@@ -119,7 +93,7 @@ export function Cart() {
                       <X className="h-4 w-4" />
                     </Button>
                   </div>
-                )})}
+                ))}
               </div>
             </ScrollArea>
             <Separator />

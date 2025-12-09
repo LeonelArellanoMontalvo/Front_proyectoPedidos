@@ -39,6 +39,7 @@ import { Textarea } from '@/components/ui/textarea';
 import type { Dish } from '@/lib/types';
 import { platillos as mockDishes } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
+import axios from 'axios';
 
 const dishFormSchema = z.object({
   nombre_item: z.string().min(3, { message: 'El nombre es requerido.' }),
@@ -49,6 +50,21 @@ const dishFormSchema = z.object({
 });
 
 type DishFormValues = z.infer<typeof dishFormSchema>;
+
+const CREATE_PLATILLO_MUTATION = `
+  mutation createPlatillo($createPlatilloInput: CreatePlatilloInput!) {
+    createPlatillo(createPlatilloInput: $createPlatilloInput) {
+      id: item_id
+      nombreItem: nombre_item
+      precio
+      categoriaNombre: categoria_nombre
+      descripcion
+      estado
+      disponible
+    }
+  }
+`;
+
 
 export default function AdminDishesPage() {
   const [dishes, setDishes] = useState<Dish[]>(mockDishes);
@@ -98,23 +114,57 @@ export default function AdminDishesPage() {
     );
   };
 
-  function onSubmit(data: DishFormValues) {
+  async function onSubmit(data: DishFormValues) {
     if (editingDish) {
-      // Update existing dish
+      // Logic to update a dish will be implemented later
+      console.log("Updating dish (not implemented yet):", data);
       const updatedDishes = dishes.map(d =>
-        d.item_id === editingDish.item_id ? { ...editingDish, ...data, estado: data.disponible ? 'ACTIVO' : editingDish.estado } : d
+        d.item_id === editingDish.item_id ? { ...editingDish, ...data, estado: data.disponible ? 'ACTIVO' : 'DESCONTINUADO' } : d
       );
       setDishes(updatedDishes);
       toast({ title: 'Platillo Actualizado', description: `"${data.nombre_item}" ha sido actualizado.` });
     } else {
-      // Add new dish
-      const newDish: Dish = {
-        item_id: Math.max(...dishes.map(d => d.item_id)) + 1,
-        ...data,
-        estado: data.disponible ? 'ACTIVO' : 'DESCONTINUADO',
-      };
-      setDishes([...dishes, newDish]);
-      toast({ title: 'Platillo Agregado', description: `"${data.nombre_item}" ha sido creado.` });
+      // Add new dish via API
+      try {
+        const response = await axios.post('/graphql', {
+          query: CREATE_PLATILLO_MUTATION,
+          variables: {
+            createPlatilloInput: {
+              nombreItem: data.nombre_item,
+              descripcion: data.descripcion || "",
+              precio: data.precio,
+              categoriaNombre: data.categoria_nombre,
+              estado: data.disponible ? 'ACTIVO' : 'DESCONTINUADO',
+            }
+          }
+        });
+
+        const newDish = response.data.data?.createPlatillo;
+
+        if (newDish) {
+            // The API response field names need to be mapped to our Dish type.
+            const formattedDish : Dish = {
+                item_id: newDish.id,
+                nombre_item: newDish.nombreItem,
+                categoria_nombre: newDish.categoriaNombre,
+                descripcion: newDish.descripcion,
+                precio: newDish.precio,
+                disponible: newDish.disponible,
+                estado: newDish.estado,
+            };
+            setDishes(currentDishes => [...currentDishes, formattedDish]);
+            toast({ title: 'Platillo Agregado', description: `"${data.nombre_item}" ha sido creado.` });
+        } else {
+             throw new Error(response.data.errors?.[0]?.message || "Error al crear el platillo");
+        }
+      } catch (error: any) {
+        console.error("Error creating dish:", error);
+        toast({
+            variant: "destructive",
+            title: "Error al crear platillo",
+            description: error.message || "No se pudo conectar a la API.",
+        });
+      }
     }
     setIsDialogOpen(false);
     setEditingDish(null);
