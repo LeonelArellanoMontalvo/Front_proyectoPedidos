@@ -15,12 +15,9 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, UserCheck, UserX } from 'lucide-react';
 import type { User } from '@/lib/types';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import placeholderData from '@/lib/placeholder-images.json';
-import { Skeleton } from '@/components/ui/skeleton';
-
 
 const GET_USUARIOS_QUERY = `
   query {
@@ -39,21 +36,6 @@ const GET_USUARIOS_QUERY = `
     }
   }
 `;
-
-const userAvatars = placeholderData.placeholderImages.filter(p => p.description.includes('avatar'));
-
-const getAvatarForUser = (userId: string) => {
-  if (!userAvatars.length) return { imageUrl: '', imageHint: '' };
-  let hash = 0;
-  for (let i = 0; i < userId.length; i++) {
-    const char = userId.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32bit integer
-  }
-  const index = Math.abs(hash) % userAvatars.length;
-  return userAvatars[index];
-}
-
 
 export default function AdminCustomersPage() {
     const [customers, setCustomers] = useState<User[]>([]);
@@ -135,14 +117,11 @@ export default function AdminCustomersPage() {
                     Cargando clientes...
                   </TableCell>
                 </TableRow>
-              ) : customers.map((customer) => {
-                const avatar = getAvatarForUser(customer.cedula);
-                return (
+              ) : customers.map((customer) => (
                 <TableRow key={customer.cedula}>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-3">
                         <Avatar>
-                            <AvatarImage src={avatar.imageUrl} alt={customer.nombre} data-ai-hint={avatar.imageHint} />
                             <AvatarFallback>{customer.nombre[0]}{customer.apellido?.[0]}</AvatarFallback>
                         </Avatar>
                         <div>
@@ -168,7 +147,7 @@ export default function AdminCustomersPage() {
                     />
                   </TableCell>
                 </TableRow>
-              )})}
+              ))}
             </TableBody>
           </Table>
         </CardContent>

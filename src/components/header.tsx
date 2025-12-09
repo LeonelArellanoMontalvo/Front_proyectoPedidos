@@ -14,32 +14,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Cart } from '@/components/cart';
 import { Logo } from '@/components/logo';
-import placeholderData from '@/lib/placeholder-images.json';
-
-const userAvatars = placeholderData.placeholderImages.filter(p => p.description.includes('avatar'));
-
-const getAvatarForUser = (userId: string) => {
-  if (!userAvatars.length) return null;
-  // A simple way to get a consistent index for a given id
-  let hash = 0;
-  for (let i = 0; i < userId.length; i++) {
-    const char = userId.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32bit integer
-  }
-  const index = Math.abs(hash) % userAvatars.length;
-  return userAvatars[index];
-}
-
 
 export default function Header() {
   const { isAuthenticated, user, logout, isAdmin } = useAuth();
 
   const userInitial = user?.nombre?.[0]?.toUpperCase() || 'U';
-  const userAvatar = user ? getAvatarForUser(user.email) : null;
+  const userLastNameInitial = user?.apellido?.[0]?.toUpperCase() || '';
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -54,8 +37,7 @@ export default function Header() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="secondary" className="relative h-8 w-8 rounded-full">
                     <Avatar className="h-8 w-8">
-                      {userAvatar && <AvatarImage src={userAvatar.imageUrl} alt={user.nombre} data-ai-hint={userAvatar.imageHint} />}
-                      <AvatarFallback>{userInitial}</AvatarFallback>
+                      <AvatarFallback>{userInitial}{userLastNameInitial}</AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
