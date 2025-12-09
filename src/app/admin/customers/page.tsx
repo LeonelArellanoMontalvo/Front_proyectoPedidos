@@ -77,7 +77,10 @@ export default function AdminCustomersPage() {
 
     const toggleCustomerStatus = async (cedula: string) => {
         const originalCustomers = [...customers];
-        const newStatus = customers.find(c => c.cedula === cedula)?.estado === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO';
+        const customerToUpdate = customers.find(c => c.cedula === cedula);
+        if (!customerToUpdate) return;
+
+        const newStatus = customerToUpdate.estado === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO';
         
         // Optimistic update
         setCustomers(currentCustomers => 
@@ -91,7 +94,7 @@ export default function AdminCustomersPage() {
                 query: UPDATE_USUARIO_MUTATION,
                 variables: {
                     updateUsuarioInput: {
-                        cedula,
+                        cedula: cedula,
                         estado: newStatus
                     }
                 }
