@@ -157,110 +157,109 @@ export default function AdminOrdersPage() {
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Todos los Pedidos</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Pedido ID</TableHead>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Fecha</TableHead>
-                <TableHead>Total</TableHead>
-                <TableHead>Estado Actual</TableHead>
-                <TableHead>Cambiar Estado</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
+      <Dialog>
+        <Card>
+          <CardHeader>
+            <CardTitle>Todos los Pedidos</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
                 <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center">
-                        Cargando pedidos...
+                  <TableHead>Pedido ID</TableHead>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead>Total</TableHead>
+                  <TableHead>Estado Actual</TableHead>
+                  <TableHead>Cambiar Estado</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                      <TableCell colSpan={7} className="h-24 text-center">
+                          Cargando pedidos...
+                      </TableCell>
+                  </TableRow>
+                ) : orders.map((order) => (
+                  <TableRow key={order.id}>
+                    <TableCell className="font-medium">#{order.id}</TableCell>
+                    <TableCell>{order.usuario?.nombre || order.usuarioCedula}</TableCell>
+                    <TableCell>{new Date(order.fechaPedido).toLocaleDateString()}</TableCell>
+                    <TableCell>${order.montoTotal.toFixed(2)}</TableCell>
+                    <TableCell>
+                      <Badge variant={getStatusVariant(order.estadoPedido)}>{order.estadoPedido}</Badge>
                     </TableCell>
-                </TableRow>
-              ) : orders.map((order) => (
-                <TableRow key={order.id}>
-                  <TableCell className="font-medium">#{order.id}</TableCell>
-                  <TableCell>{order.usuario?.nombre || order.usuarioCedula}</TableCell>
-                  <TableCell>{new Date(order.fechaPedido).toLocaleDateString()}</TableCell>
-                  <TableCell>${order.montoTotal.toFixed(2)}</TableCell>
-                  <TableCell>
-                    <Badge variant={getStatusVariant(order.estadoPedido)}>{order.estadoPedido}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Select
-                      value={order.estadoPedido}
-                      onValueChange={(value: Order['estadoPedido']) =>
-                        handleStatusChange(order.id, value)
-                      }
-                      disabled={order.estadoPedido === 'Entregado' || order.estadoPedido === 'Cancelado'}
-                    >
-                      <SelectTrigger className="w-[150px]">
-                        <SelectValue placeholder="Cambiar estado" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Pendiente">Pendiente</SelectItem>
-                        <SelectItem value="Autorizado">Autorizado</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Dialog>
-                        <DialogTrigger asChild>
-                            <Button variant="outline" size="icon" onClick={() => setSelectedOrder(order)}>
-                                <Eye className="h-4 w-4" />
-                            </Button>
-                        </DialogTrigger>
-                    </Dialog>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-      
-      {selectedOrder && (
-         <DialogContent>
-            <DialogHeader>
-                <DialogTitle>Detalles del Pedido #{selectedOrder.id}</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-                <div>
-                    <h4 className="font-semibold">Cliente:</h4>
-                    <p>{selectedOrder.usuario?.nombre || 'N/A'}</p>
-                    <p className="text-sm text-muted-foreground">{selectedOrder.usuario?.email || selectedOrder.usuarioCedula}</p>
-                </div>
-                 <div>
-                    <h4 className="font-semibold">Entrega:</h4>
-                    <p>{selectedOrder.tipoEntrega} - {selectedOrder.direccionEntrega}</p>
-                </div>
-                <Separator />
-                <div>
-                    <h4 className="font-semibold mb-2">Platillos:</h4>
-                    <ul className="space-y-2">
-                        {selectedOrder.detalles.map((detail: OrderDetail) => (
-                            <li key={detail.id} className="flex justify-between items-center text-sm">
-                                <div>
-                                    <p><span className="font-medium">{detail.cantidad}x</span> {detail.platillo.nombreItem}</p>
-                                </div>
-                                <p>${detail.subtotal.toFixed(2)}</p>
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-                <Separator />
-                <div className="flex justify-between items-center font-bold text-lg">
-                    <p>Monto Total:</p>
-                    <p>${selectedOrder.montoTotal.toFixed(2)}</p>
-                </div>
-            </div>
-         </DialogContent>
-      )}
-
+                    <TableCell>
+                      <Select
+                        value={order.estadoPedido}
+                        onValueChange={(value: Order['estadoPedido']) =>
+                          handleStatusChange(order.id, value)
+                        }
+                        disabled={order.estadoPedido === 'Entregado' || order.estadoPedido === 'Cancelado'}
+                      >
+                        <SelectTrigger className="w-[150px]">
+                          <SelectValue placeholder="Cambiar estado" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Pendiente">Pendiente</SelectItem>
+                          <SelectItem value="Autorizado">Autorizado</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell className="text-right">
+                          <DialogTrigger asChild>
+                              <Button variant="outline" size="icon" onClick={() => setSelectedOrder(order)}>
+                                  <Eye className="h-4 w-4" />
+                              </Button>
+                          </DialogTrigger>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+        
+        {selectedOrder && (
+          <DialogContent>
+              <DialogHeader>
+                  <DialogTitle>Detalles del Pedido #{selectedOrder.id}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                  <div>
+                      <h4 className="font-semibold">Cliente:</h4>
+                      <p>{selectedOrder.usuario?.nombre || 'N/A'}</p>
+                      <p className="text-sm text-muted-foreground">{selectedOrder.usuario?.email || selectedOrder.usuarioCedula}</p>
+                  </div>
+                  <div>
+                      <h4 className="font-semibold">Entrega:</h4>
+                      <p>{selectedOrder.tipoEntrega} - {selectedOrder.direccionEntrega}</p>
+                  </div>
+                  <Separator />
+                  <div>
+                      <h4 className="font-semibold mb-2">Platillos:</h4>
+                      <ul className="space-y-2">
+                          {selectedOrder.detalles.map((detail: OrderDetail) => (
+                              <li key={detail.id} className="flex justify-between items-center text-sm">
+                                  <div>
+                                      <p><span className="font-medium">{detail.cantidad}x</span> {detail.platillo.nombreItem}</p>
+                                  </div>
+                                  <p>${detail.subtotal.toFixed(2)}</p>
+                              </li>
+                          ))}
+                      </ul>
+                  </div>
+                  <Separator />
+                  <div className="flex justify-between items-center font-bold text-lg">
+                      <p>Monto Total:</p>
+                      <p>${selectedOrder.montoTotal.toFixed(2)}</p>
+                  </div>
+              </div>
+          </DialogContent>
+        )}
+      </Dialog>
     </div>
   );
 }
