@@ -126,17 +126,20 @@ export default function AdminDishesPage() {
     } else {
       // Add new dish via API
       try {
+        const createPlatilloInput: any = {
+            nombreItem: data.nombre_item,
+            precio: data.precio,
+            categoriaNombre: data.categoria_nombre,
+            disponible: data.disponible
+        };
+
+        if (data.descripcion) {
+            createPlatilloInput.descripcion = data.descripcion;
+        }
+
         const response = await axios.post('/graphql', {
           query: CREATE_PLATILLO_MUTATION,
-          variables: {
-            createPlatilloInput: {
-              nombreItem: data.nombre_item,
-              descripcion: data.descripcion || "",
-              precio: data.precio,
-              categoriaNombre: data.categoria_nombre,
-              disponible: data.disponible
-            }
-          }
+          variables: { createPlatilloInput }
         });
 
         const newDish = response.data.data?.createPlatillo;
