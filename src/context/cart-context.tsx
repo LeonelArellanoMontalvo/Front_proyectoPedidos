@@ -1,3 +1,4 @@
+
 "use client";
 
 import { createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
@@ -10,6 +11,7 @@ interface CartContextType {
   addToCart: (item: Dish) => void;
   removeFromCart: (itemId: number) => void;
   updateQuantity: (itemId: number, quantity: number) => void;
+  updateNotes: (itemId: number, notes: string) => void;
   clearCart: () => void;
   cartTotal: number;
   cartCount: number;
@@ -29,7 +31,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
         );
       }
-      return [...prevItems, { ...item, quantity: 1 }];
+      return [...prevItems, { ...item, quantity: 1, notasAdicionales: '' }];
     });
     toast({
       title: "Platillo agregado",
@@ -53,6 +55,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const updateNotes = (itemId: number, notes: string) => {
+    setCartItems(prevItems => 
+      prevItems.map(i => 
+        i.id === itemId ? { ...i, notasAdicionales: notes } : i
+      )
+    )
+  }
+
   const clearCart = () => {
     setCartItems([]);
   };
@@ -70,6 +80,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     addToCart,
     removeFromCart,
     updateQuantity,
+    updateNotes,
     clearCart,
     cartTotal,
     cartCount,

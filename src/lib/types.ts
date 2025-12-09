@@ -58,4 +58,5 @@ export interface OrderDetail {
 
 export interface CartItem extends Dish {
   quantity: number;
+  notasAdicionales?: string;
 }

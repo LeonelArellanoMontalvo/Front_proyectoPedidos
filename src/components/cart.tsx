@@ -21,13 +21,12 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { Input } from './ui/input';
 
 const CREATE_PEDIDO_MUTATION = `
   mutation CreatePedido($createPedidoInput: CreatePedidoInput!) {
     createPedido(createPedidoInput: $createPedidoInput) {
       id
-      usuarioCedula
-      montoTotal
     }
   }
 `;
@@ -42,7 +41,7 @@ const CREATE_DETALLE_PEDIDO_MUTATION = `
 
 
 export function Cart() {
-  const { cartItems, removeFromCart, updateQuantity, cartTotal, cartCount, clearCart } = useCart();
+  const { cartItems, removeFromCart, updateQuantity, updateNotes, cartTotal, cartCount, clearCart } = useCart();
   const { isAuthenticated, user } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
@@ -78,24 +77,27 @@ export function Cart() {
 
         const createdPedido = pedidoResponse.data.data?.createPedido;
         if (!createdPedido || !createdPedido.id) {
-            throw new Error("No se pudo crear el pedido.");
+            const errorMessage = pedidoResponse.data.errors?.[0]?.message || "No se pudo crear el pedido.";
+            throw new Error(errorMessage);
         }
         
         const pedidoId = createdPedido.id;
 
         // 2. Create order details for each item in the cart
         for (const item of cartItems) {
+            const detalleInput: any = {
+                pedidoId: pedidoId,
+                itemId: item.id,
+                cantidad: item.quantity,
+                precioUnitario: item.precio,
+                subtotal: item.precio * item.quantity
+            };
+            if (item.notasAdicionales) {
+                detalleInput.notasAdicionales = item.notasAdicionales;
+            }
             await axios.post('/graphql', {
                 query: CREATE_DETALLE_PEDIDO_MUTATION,
-                variables: {
-                    createDetallePedidoInput: {
-                        pedidoId: pedidoId,
-                        itemId: item.id,
-                        cantidad: item.quantity,
-                        precioUnitario: item.precio,
-                        subtotal: item.precio * item.quantity
-                    }
-                }
+                variables: { createDetallePedidoInput: detalleInput }
             });
         }
 
@@ -106,12 +108,12 @@ export function Cart() {
         clearCart();
         router.push('/orders');
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error al enviar el pedido:", error);
         toast({
             variant: "destructive",
             title: "Error al enviar pedido",
-            description: "No se pudo completar el pedido. Inténtalo de nuevo."
+            description: error.message || "No se pudo completar el pedido. Inténtalo de nuevo."
         });
     } finally {
         setIsSubmitting(false);
@@ -140,40 +142,49 @@ export function Cart() {
             <ScrollArea className="flex-1">
               <div className="flex flex-col gap-6 p-6 pr-6">
                 {cartItems.map((item) => (
-                  <div key={item.id} className="flex items-start gap-4">
-                    <div className="flex-1">
-                      <h4 className="font-semibold">{item.nombreItem}</h4>
-                      <p className="text-sm text-muted-foreground">
-                        ${item.precio.toFixed(2)}
-                      </p>
-                      <div className="mt-2 flex items-center gap-2">
+                  <div key={item.id} className="flex flex-col gap-3 border-b pb-4">
+                    <div className='flex items-start gap-4'>
+                        <div className="flex-1">
+                            <h4 className="font-semibold">{item.nombreItem}</h4>
+                            <p className="text-sm text-muted-foreground">
+                                ${item.precio.toFixed(2)}
+                            </p>
+                            <div className="mt-2 flex items-center gap-2">
+                                <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                >
+                                <Minus className="h-4 w-4" />
+                                </Button>
+                                <span>{item.quantity}</span>
+                                <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                >
+                                <Plus className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        </div>
                         <Button
-                          variant="outline"
-                          size="icon"
-                          className="h-7 w-7"
-                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                        >
-                          <Minus className="h-4 w-4" />
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                            onClick={() => removeFromCart(item.id)}
+                            >
+                            <X className="h-4 w-4" />
                         </Button>
-                        <span>{item.quantity}</span>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="h-7 w-7"
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                      onClick={() => removeFromCart(item.id)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
+                    <Input
+                        type="text"
+                        placeholder="Notas adicionales (ej. sin cebolla)"
+                        className="text-xs h-9"
+                        value={item.notasAdicionales || ''}
+                        onChange={(e) => updateNotes(item.id, e.target.value)}
+                    />
                   </div>
                 ))}
               </div>
