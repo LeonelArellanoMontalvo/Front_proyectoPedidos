@@ -54,6 +54,15 @@ const GET_PEDIDOS_QUERY = `
   }
 `;
 
+const UPDATE_PEDIDO_MUTATION = `
+    mutation UpdatePedidoEstado($updatePedidoInput: UpdatePedidoInput!) {
+        updatePedido(updatePedidoInput: $updatePedidoInput) {
+            id
+            estadoPedido
+        }
+    }
+`;
+
 function getStatusVariant(status: Order['estadoPedido']) {
     switch (status) {
         case 'Pendiente': return 'secondary';
@@ -92,17 +101,40 @@ export default function AdminOrdersPage() {
     fetchOrders();
   }, []);
 
-  const handleStatusChange = (orderId: number, newStatus: "Pendiente" | "Autorizado") => {
-    // This will need a mutation later
+  const handleStatusChange = async (orderId: number, newStatus: Order['estadoPedido']) => {
+    const originalOrders = [...orders];
+    
+    // Optimistic update
     setOrders(currentOrders =>
       currentOrders.map(order =>
         order.id === orderId ? { ...order, estadoPedido: newStatus } : order
       )
     );
-    toast({
-        title: "Estado Actualizado",
-        description: `El pedido #${orderId} ha sido actualizado a "${newStatus}".`
-    })
+
+    try {
+        await axios.post('/graphql', {
+            query: UPDATE_PEDIDO_MUTATION,
+            variables: {
+                updatePedidoInput: {
+                    id: orderId,
+                    estadoPedido: newStatus
+                }
+            }
+        });
+        toast({
+            title: "Estado Actualizado",
+            description: `El pedido #${orderId} ha sido actualizado a "${newStatus}".`
+        });
+    } catch (error) {
+        // Revert on error
+        setOrders(originalOrders);
+        console.error("Error updating order status:", error);
+        toast({
+            variant: "destructive",
+            title: "Error al actualizar",
+            description: "No se pudo cambiar el estado del pedido."
+        });
+    }
   };
 
   return (
@@ -150,7 +182,7 @@ export default function AdminOrdersPage() {
                   <TableCell className="text-right">
                     <Select
                       value={order.estadoPedido}
-                      onValueChange={(value: "Pendiente" | "Autorizado") =>
+                      onValueChange={(value: Order['estadoPedido']) =>
                         handleStatusChange(order.id, value)
                       }
                       disabled={order.estadoPedido === 'Entregado' || order.estadoPedido === 'Cancelado'}
@@ -161,6 +193,9 @@ export default function AdminOrdersPage() {
                       <SelectContent>
                         <SelectItem value="Pendiente">Pendiente</SelectItem>
                         <SelectItem value="Autorizado">Autorizado</SelectItem>
+                        <SelectItem value="Enviado">Enviado</SelectItem>
+                        <SelectItem value="Entregado">Entregado</SelectItem>
+                        <SelectItem value="Cancelado">Cancelado</SelectItem>
                       </SelectContent>
                     </Select>
                   </TableCell>
