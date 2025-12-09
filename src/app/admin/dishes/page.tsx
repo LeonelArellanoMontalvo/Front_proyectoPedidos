@@ -134,7 +134,7 @@ export default function AdminDishesPage() {
               descripcion: data.descripcion || "",
               precio: data.precio,
               categoriaNombre: data.categoria_nombre,
-              estado: data.disponible ? 'ACTIVO' : 'DESCONTINUADO',
+              disponible: data.disponible
             }
           }
         });
