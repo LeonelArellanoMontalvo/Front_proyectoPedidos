@@ -38,8 +38,8 @@ const GET_USUARIOS_QUERY = `
 `;
 
 const UPDATE_USUARIO_MUTATION = `
-  mutation UpdateUsuarioEstado($updateUsuarioInput: UpdateUsuarioInput!) {
-    updateUsuario(updateUsuarioInput: $updateUsuarioInput) {
+  mutation CambiarEstadoUsuario($cedula: String!, $nuevoEstado: String!) {
+    cambiarEstadoUsuario(cedula: $cedula, nuevoEstado: $nuevoEstado) {
       cedula
       estado
     }
@@ -93,10 +93,8 @@ export default function AdminCustomersPage() {
             await axios.post('/graphql', {
                 query: UPDATE_USUARIO_MUTATION,
                 variables: {
-                    updateUsuarioInput: {
-                        cedula: cedula,
-                        estado: newStatus
-                    }
+                    cedula: cedula,
+                    nuevoEstado: newStatus
                 }
             });
             toast({
@@ -154,7 +152,7 @@ export default function AdminCustomersPage() {
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-3">
                         <Avatar>
-                            <AvatarFallback>{customer.nombre[0]}{customer.apellido?.[0]}</AvatarFallback>
+                            <AvatarFallback>{customer.nombre?.[0]}{customer.apellido?.[0]}</AvatarFallback>
                         </Avatar>
                         <div>
                             <p>{customer.nombre} {customer.apellido}</p>
