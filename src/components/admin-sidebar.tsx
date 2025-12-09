@@ -2,16 +2,16 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Package, Users, ClipboardList, Shield } from 'lucide-react';
+import { Package, Users, ClipboardList, Shield, ShieldCheck } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Logo } from './logo';
-import { Separator } from './ui/separator';
 
 const navItems = [
   { href: '/admin/orders', label: 'Pedidos', icon: ClipboardList },
   { href: '/admin/dishes', label: 'Platillos', icon: Package },
   { href: '/admin/customers', label: 'Clientes', icon: Users },
+  { href: '/admin/audit', label: 'Auditoría', icon: ShieldCheck },
 ];
 
 export default function AdminSidebar() {
