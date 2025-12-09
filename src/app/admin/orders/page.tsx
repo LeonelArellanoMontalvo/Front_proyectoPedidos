@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import {
   Table,
@@ -28,7 +28,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ClipboardList, Eye } from 'lucide-react';
+import { ClipboardList, Eye, ArrowUpDown } from 'lucide-react';
 import type { Order, OrderDetail } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
@@ -85,18 +85,14 @@ function getStatusVariant(status: Order['estadoPedido']) {
     }
 }
 
+type SortKey = keyof Order;
+
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
-  const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [filters, setFilters] = useState({
-    id: '',
-    cliente: '',
-    fecha: '',
-    total: '',
-    estado: ''
-  });
+  const [filter, setFilter] = useState('');
+  const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'ascending' | 'descending' } | null>({ key: 'fechaPedido', direction: 'descending' });
   const { toast } = useToast();
 
   const fetchOrders = async () => {
@@ -104,9 +100,7 @@ export default function AdminOrdersPage() {
     try {
         const response = await axios.post('/graphql', { query: GET_PEDIDOS_QUERY });
         const allOrders = response.data.data?.pedidos || [];
-        const sortedOrders = allOrders.sort((a: Order, b: Order) => new Date(b.fechaPedido).getTime() - new Date(a.fechaPedido).getTime());
-        setOrders(sortedOrders);
-        setFilteredOrders(sortedOrders);
+        setOrders(allOrders);
     } catch (error) {
         console.error("Error fetching orders:", error);
         toast({
@@ -121,44 +115,43 @@ export default function AdminOrdersPage() {
 
   useEffect(() => {
     fetchOrders();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    let filteredData = orders;
-    if (filters.id) {
-        filteredData = filteredData.filter(o => o.id.toString().includes(filters.id));
+  const sortedAndFilteredOrders = useMemo(() => {
+    let sortableItems = [...orders];
+    if (sortConfig !== null) {
+        sortableItems.sort((a, b) => {
+            const aValue = sortConfig.key === 'usuario' ? a.usuario?.nombre || a.usuarioCedula : a[sortConfig.key];
+            const bValue = sortConfig.key === 'usuario' ? b.usuario?.nombre || b.usuarioCedula : b[sortConfig.key];
+            if (aValue < bValue) {
+                return sortConfig.direction === 'ascending' ? -1 : 1;
+            }
+            if (aValue > bValue) {
+                return sortConfig.direction === 'ascending' ? 1 : -1;
+            }
+            return 0;
+        });
     }
-    if (filters.cliente) {
-        filteredData = filteredData.filter(o => (o.usuario?.nombre || o.usuarioCedula).toLowerCase().includes(filters.cliente.toLowerCase()));
-    }
-    if (filters.fecha) {
-        filteredData = filteredData.filter(o => new Date(o.fechaPedido).toLocaleDateString().toLowerCase().includes(filters.fecha.toLowerCase()));
-    }
-    if (filters.total) {
-        filteredData = filteredData.filter(o => o.montoTotal.toString().includes(filters.total));
-    }
-    if (filters.estado) {
-        filteredData = filteredData.filter(o => o.estadoPedido.toLowerCase().includes(filters.estado.toLowerCase()));
-    }
-    setFilteredOrders(filteredData);
-  }, [filters, orders]);
+    return sortableItems.filter(o => (o.usuario?.nombre || o.usuarioCedula).toLowerCase().includes(filter.toLowerCase()));
+  }, [orders, filter, sortConfig]);
 
-  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFilters(prev => ({...prev, [name]: value}));
+  const requestSort = (key: SortKey) => {
+      let direction: 'ascending' | 'descending' = 'ascending';
+      if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
+          direction = 'descending';
+      }
+      setSortConfig({ key, direction });
   };
 
+  const getSortIcon = (key: SortKey) => {
+    if (!sortConfig || sortConfig.key !== key) {
+      return <ArrowUpDown className="w-4 h-4 ml-2 opacity-30" />;
+    }
+    return sortConfig.direction === 'ascending' ? '▲' : '▼';
+  };
 
   const handleStatusChange = async (orderId: number, newStatus: Order['estadoPedido']) => {
-    const originalOrders = [...orders];
-    
-    // Optimistic update
-    const updateState = (orderList: Order[]) => orderList.map(order =>
-        order.id === orderId ? { ...order, estadoPedido: newStatus } : order
-    );
-    setOrders(updateState);
-    setFilteredOrders(updateState);
-
     try {
         await axios.post('/graphql', {
             query: UPDATE_PEDIDO_MUTATION,
@@ -169,14 +162,17 @@ export default function AdminOrdersPage() {
                 }
             }
         });
+
+        const updatedOrders = orders.map(order =>
+            order.id === orderId ? { ...order, estadoPedido: newStatus } : order
+        );
+        setOrders(updatedOrders);
+
         toast({
             title: "Estado Actualizado",
             description: `El pedido #${orderId} ha sido actualizado a "${newStatus}".`
         });
     } catch (error) {
-        // Revert on error
-        setOrders(originalOrders);
-        setFilteredOrders(originalOrders);
         console.error("Error updating order status:", error);
         toast({
             variant: "destructive",
@@ -200,27 +196,26 @@ export default function AdminOrdersPage() {
         <Card>
           <CardHeader>
             <CardTitle>Todos los Pedidos</CardTitle>
+            <div className="pt-4">
+              <Input 
+                placeholder="Filtrar por cliente..." 
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+                className="max-w-sm"
+              />
+            </div>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Pedido ID</TableHead>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>Fecha</TableHead>
-                  <TableHead>Total</TableHead>
-                  <TableHead>Estado Actual</TableHead>
+                  <TableHead><Button variant="ghost" onClick={() => requestSort('id')}>Pedido ID {getSortIcon('id')}</Button></TableHead>
+                  <TableHead><Button variant="ghost" onClick={() => requestSort('usuario')}>Cliente {getSortIcon('usuario')}</Button></TableHead>
+                  <TableHead><Button variant="ghost" onClick={() => requestSort('fechaPedido')}>Fecha {getSortIcon('fechaPedido')}</Button></TableHead>
+                  <TableHead><Button variant="ghost" onClick={() => requestSort('montoTotal')}>Total {getSortIcon('montoTotal')}</Button></TableHead>
+                  <TableHead><Button variant="ghost" onClick={() => requestSort('estadoPedido')}>Estado Actual {getSortIcon('estadoPedido')}</Button></TableHead>
                   <TableHead>Cambiar Estado</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
-                </TableRow>
-                <TableRow>
-                  <TableCell><Input placeholder="Filtrar ID..." name="id" value={filters.id} onChange={handleFilterChange} /></TableCell>
-                  <TableCell><Input placeholder="Filtrar cliente..." name="cliente" value={filters.cliente} onChange={handleFilterChange} /></TableCell>
-                  <TableCell><Input placeholder="Filtrar fecha..." name="fecha" value={filters.fecha} onChange={handleFilterChange} /></TableCell>
-                  <TableCell><Input placeholder="Filtrar total..." name="total" value={filters.total} onChange={handleFilterChange} /></TableCell>
-                  <TableCell><Input placeholder="Filtrar estado..." name="estado" value={filters.estado} onChange={handleFilterChange} /></TableCell>
-                  <TableCell></TableCell>
-                  <TableCell></TableCell>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -230,7 +225,7 @@ export default function AdminOrdersPage() {
                           Cargando pedidos...
                       </TableCell>
                   </TableRow>
-                ) : filteredOrders.map((order) => (
+                ) : sortedAndFilteredOrders.map((order) => (
                   <TableRow key={order.id}>
                     <TableCell className="font-medium">#{order.id}</TableCell>
                     <TableCell>{order.usuario?.nombre || order.usuarioCedula}</TableCell>

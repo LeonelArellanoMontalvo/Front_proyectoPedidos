@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -16,7 +16,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Package, PlusCircle, Edit, Trash2 } from 'lucide-react';
+import { Package, PlusCircle, Edit, Trash2, ArrowUpDown } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -83,18 +83,15 @@ const UPDATE_PLATILLO_MUTATION = `
     }
 `;
 
+type SortKey = keyof Dish;
+
 export default function AdminDishesPage() {
   const [dishes, setDishes] = useState<Dish[]>([]);
-  const [filteredDishes, setFilteredDishes] = useState<Dish[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingDish, setEditingDish] = useState<Dish | null>(null);
-  const [filters, setFilters] = useState({
-    nombreItem: '',
-    categoriaNombre: '',
-    precio: '',
-    estado: ''
-  });
+  const [filter, setFilter] = useState('');
+  const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'ascending' | 'descending' } | null>(null);
   const { toast } = useToast();
 
   const form = useForm<DishFormValues>({
@@ -115,7 +112,6 @@ export default function AdminDishesPage() {
         query: GET_PLATILLOS_QUERY,
       });
       setDishes(response.data.data?.platillos || []);
-      setFilteredDishes(response.data.data?.platillos || []);
     } catch (error) {
       console.error("Error fetching dishes:", error);
       toast({
@@ -130,28 +126,38 @@ export default function AdminDishesPage() {
 
   useEffect(() => {
     fetchDishes();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    let filteredData = dishes;
-    if (filters.nombreItem) {
-        filteredData = filteredData.filter(d => d.nombreItem.toLowerCase().includes(filters.nombreItem.toLowerCase()));
+  const sortedAndFilteredDishes = useMemo(() => {
+    let sortableItems = [...dishes];
+    if (sortConfig !== null) {
+        sortableItems.sort((a, b) => {
+            if (a[sortConfig.key] < b[sortConfig.key]) {
+                return sortConfig.direction === 'ascending' ? -1 : 1;
+            }
+            if (a[sortConfig.key] > b[sortConfig.key]) {
+                return sortConfig.direction === 'ascending' ? 1 : -1;
+            }
+            return 0;
+        });
     }
-    if (filters.categoriaNombre) {
-        filteredData = filteredData.filter(d => d.categoriaNombre.toLowerCase().includes(filters.categoriaNombre.toLowerCase()));
-    }
-    if (filters.precio) {
-        filteredData = filteredData.filter(d => d.precio.toString().includes(filters.precio));
-    }
-    if (filters.estado) {
-        filteredData = filteredData.filter(d => d.estado.toLowerCase().includes(filters.estado.toLowerCase()));
-    }
-    setFilteredDishes(filteredData);
-  }, [filters, dishes]);
+    return sortableItems.filter(d => d.nombreItem.toLowerCase().includes(filter.toLowerCase()));
+  }, [dishes, filter, sortConfig]);
 
-  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFilters(prev => ({...prev, [name]: value}));
+  const requestSort = (key: SortKey) => {
+      let direction: 'ascending' | 'descending' = 'ascending';
+      if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
+          direction = 'descending';
+      }
+      setSortConfig({ key, direction });
+  };
+
+  const getSortIcon = (key: SortKey) => {
+    if (!sortConfig || sortConfig.key !== key) {
+      return <ArrowUpDown className="w-4 h-4 ml-2 opacity-30" />;
+    }
+    return sortConfig.direction === 'ascending' ? '▲' : '▼';
   };
 
   const handleEditClick = (dish: Dish) => {
@@ -180,14 +186,6 @@ export default function AdminDishesPage() {
 
   const toggleDishStatus = async (dish: Dish) => {
     const newStatus = dish.estado === 'ACTIVO' ? 'DESCONTINUADO' : 'ACTIVO';
-    const originalDishes = [...dishes];
-
-    // Optimistic update
-    const updateState = (dishList: Dish[]) => dishList.map(d => 
-        d.id === dish.id ? { ...d, estado: newStatus, disponible: newStatus === 'ACTIVO' } : d
-    );
-    setDishes(updateState);
-    setFilteredDishes(updateState);
     
     try {
         await axios.post('/graphql', {
@@ -199,10 +197,14 @@ export default function AdminDishesPage() {
                 }
             }
         });
+
+        const updatedDishes = dishes.map(d => 
+            d.id === dish.id ? { ...d, estado: newStatus, disponible: newStatus === 'ACTIVO' } : d
+        );
+        setDishes(updatedDishes);
+
         toast({ title: "Estado del platillo actualizado", description: `"${dish.nombreItem}" ahora está ${newStatus.toLowerCase()}.`});
     } catch(error) {
-        setDishes(originalDishes);
-        setFilteredDishes(originalDishes);
         console.error("Error updating dish status:", error);
         toast({
             variant: "destructive",
@@ -213,17 +215,16 @@ export default function AdminDishesPage() {
   };
 
   async function onSubmit(data: DishFormValues) {
+    // This needs a proper update mutation from the backend to work correctly for editing
     if (editingDish) {
-      // Logic to update a dish will be implemented later (needs a new mutation)
-      console.log("Updating dish (not implemented yet):", data);
+      console.warn("Update functionality is not fully implemented in the backend yet.");
       const updatedDishes = dishes.map(d =>
-        d.id === editingDish.id ? { ...editingDish, ...data, estado: data.disponible ? 'ACTIVO' : 'DESCONTINUADO' } : d
+        d.id === editingDish.id ? { ...d, ...data, estado: data.disponible ? 'ACTIVO' : 'DESCONTINUADO' } : d
       );
       setDishes(updatedDishes);
-      setFilteredDishes(updatedDishes);
-      toast({ title: 'Platillo Actualizado', description: `"${data.nombreItem}" ha sido actualizado.` });
+      toast({ title: 'Platillo Actualizado (Simulado)', description: `"${data.nombreItem}" ha sido actualizado localmente.` });
+
     } else {
-      // Add new dish via API
       try {
         const createPlatilloInput: any = {
             nombreItem: data.nombreItem,
@@ -244,16 +245,7 @@ export default function AdminDishesPage() {
         const createdDishData = response.data.data?.createPlatillo;
 
         if (createdDishData) {
-            const newDish: Dish = {
-                ...createdDishData,
-                descripcion: data.descripcion,
-                precio: data.precio,
-                disponible: data.disponible,
-                categoriaNombre: data.categoriaNombre,
-                estado: data.disponible ? 'ACTIVO' : 'DESCONTINUADO'
-            };
-            setDishes(currentDishes => [...currentDishes, newDish]);
-            setFilteredDishes(currentDishes => [...currentDishes, newDish]);
+            fetchDishes(); // Refetch all dishes to get the new one
             toast({ title: 'Platillo Agregado', description: `"${data.nombreItem}" ha sido creado.` });
         } else {
              throw new Error(response.data.errors?.[0]?.message || "Error al crear el platillo");
@@ -324,23 +316,24 @@ export default function AdminDishesPage() {
       <Card>
         <CardHeader>
           <CardTitle>Todos los Platillos</CardTitle>
+           <div className="pt-4">
+             <Input 
+                placeholder="Filtrar por nombre de platillo..." 
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+                className="max-w-sm"
+              />
+           </div>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nombre</TableHead>
-                <TableHead>Categoría</TableHead>
-                <TableHead>Precio</TableHead>
-                <TableHead>Estado</TableHead>
+                <TableHead><Button variant="ghost" onClick={() => requestSort('nombreItem')}>Nombre {getSortIcon('nombreItem')}</Button></TableHead>
+                <TableHead><Button variant="ghost" onClick={() => requestSort('categoriaNombre')}>Categoría {getSortIcon('categoriaNombre')}</Button></TableHead>
+                <TableHead><Button variant="ghost" onClick={() => requestSort('precio')}>Precio {getSortIcon('precio')}</Button></TableHead>
+                <TableHead><Button variant="ghost" onClick={() => requestSort('estado')}>Estado {getSortIcon('estado')}</Button></TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
-              </TableRow>
-               <TableRow>
-                <TableCell><Input placeholder="Filtrar por nombre..." name="nombreItem" value={filters.nombreItem} onChange={handleFilterChange} /></TableCell>
-                <TableCell><Input placeholder="Filtrar por categoría..." name="categoriaNombre" value={filters.categoriaNombre} onChange={handleFilterChange} /></TableCell>
-                <TableCell><Input placeholder="Filtrar por precio..." name="precio" value={filters.precio} onChange={handleFilterChange} /></TableCell>
-                <TableCell><Input placeholder="Filtrar por estado..." name="estado" value={filters.estado} onChange={handleFilterChange} /></TableCell>
-                <TableCell></TableCell>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -350,7 +343,7 @@ export default function AdminDishesPage() {
                     Cargando platillos...
                   </TableCell>
                 </TableRow>
-              ) : filteredDishes.map((dish) => (
+              ) : sortedAndFilteredDishes.map((dish) => (
                 <TableRow key={dish.id}>
                   <TableCell className="font-medium">{dish.nombreItem}</TableCell>
                   <TableCell>{dish.categoriaNombre}</TableCell>

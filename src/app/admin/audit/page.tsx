@@ -1,6 +1,7 @@
+
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import axios from "axios";
 import {
   Table,
@@ -11,10 +12,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ShieldCheck } from 'lucide-react';
+import { ShieldCheck, ArrowUpDown } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 interface AuditLog {
     id: string;
@@ -26,6 +28,8 @@ interface AuditLog {
     datosAnteriores: any;
     datosNuevos: any;
 }
+
+type SortKey = keyof AuditLog;
 
 const GET_AUDITORIAS_QUERY = `
   query {
@@ -44,16 +48,9 @@ const GET_AUDITORIAS_QUERY = `
 
 export default function AuditPage() {
   const [registros, setRegistros] = useState<AuditLog[]>([]);
-  const [filteredRegistros, setFilteredRegistros] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({
-    id: '',
-    usuarioCedula: '',
-    tipoAccion: '',
-    nombreTabla: '',
-    registroId: '',
-    fechaHora: '',
-  });
+  const [filter, setFilter] = useState('');
+  const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'ascending' | 'descending' } | null>({ key: 'fechaHora', direction: 'descending' });
   const { toast } = useToast();
 
   useEffect(() => {
@@ -63,9 +60,7 @@ export default function AuditPage() {
             const response = await axios.post("/graphql", { 
                 query: GET_AUDITORIAS_QUERY 
             });
-            const sortedData = response.data.data?.auditorias.sort((a: AuditLog, b: AuditLog) => new Date(b.fechaHora).getTime() - new Date(a.fechaHora).getTime());
-            setRegistros(sortedData || []);
-            setFilteredRegistros(sortedData || []);
+            setRegistros(response.data.data?.auditorias || []);
         } catch (err) {
             console.error("Error cargando auditoría:", err);
             toast({
@@ -80,33 +75,35 @@ export default function AuditPage() {
     fetchAuditLogs();
   }, [toast]);
 
-  useEffect(() => {
-    let filteredData = registros;
-    if (filters.id) {
-        filteredData = filteredData.filter(log => log.id.toLowerCase().includes(filters.id.toLowerCase()));
+  const sortedAndFilteredRegistros = useMemo(() => {
+    let sortableItems = [...registros];
+    if (sortConfig !== null) {
+      sortableItems.sort((a, b) => {
+        if (a[sortConfig.key] < b[sortConfig.key]) {
+          return sortConfig.direction === 'ascending' ? -1 : 1;
+        }
+        if (a[sortConfig.key] > b[sortConfig.key]) {
+          return sortConfig.direction === 'ascending' ? 1 : -1;
+        }
+        return 0;
+      });
     }
-    if (filters.usuarioCedula) {
-        filteredData = filteredData.filter(log => log.usuarioCedula.toLowerCase().includes(filters.usuarioCedula.toLowerCase()));
-    }
-    if (filters.tipoAccion) {
-        filteredData = filteredData.filter(log => log.tipoAccion.toLowerCase().includes(filters.tipoAccion.toLowerCase()));
-    }
-    if (filters.nombreTabla) {
-        filteredData = filteredData.filter(log => log.nombreTabla.toLowerCase().includes(filters.nombreTabla.toLowerCase()));
-    }
-    if (filters.registroId) {
-        filteredData = filteredData.filter(log => log.registroId.toLowerCase().includes(filters.registroId.toLowerCase()));
-    }
-    if (filters.fechaHora) {
-        filteredData = filteredData.filter(log => new Date(log.fechaHora).toLocaleString().toLowerCase().includes(filters.fechaHora.toLowerCase()));
-    }
+    return sortableItems.filter(log => log.usuarioCedula.toLowerCase().includes(filter.toLowerCase()));
+  }, [registros, filter, sortConfig]);
 
-    setFilteredRegistros(filteredData);
-  }, [filters, registros]);
+  const requestSort = (key: SortKey) => {
+    let direction: 'ascending' | 'descending' = 'ascending';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
 
-  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFilters(prev => ({...prev, [name]: value}));
+  const getSortIcon = (key: SortKey) => {
+    if (!sortConfig || sortConfig.key !== key) {
+      return <ArrowUpDown className="w-4 h-4 ml-2 opacity-30" />;
+    }
+    return sortConfig.direction === 'ascending' ? '▲' : '▼';
   };
 
   return (
@@ -122,30 +119,28 @@ export default function AuditPage() {
       <Card>
         <CardHeader>
           <CardTitle>Historial de Cambios</CardTitle>
+           <div className="pt-4">
+             <Input 
+                placeholder="Filtrar por Cédula de usuario..." 
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+                className="max-w-sm"
+              />
+           </div>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>ID</TableHead>
-                <TableHead>Cédula Usuario</TableHead>
-                <TableHead>Acción</TableHead>
-                <TableHead>Tabla</TableHead>
-                <TableHead>ID Registro</TableHead>
-                <TableHead>Fecha</TableHead>
+                <TableHead><Button variant="ghost" onClick={() => requestSort('id')}>ID {getSortIcon('id')}</Button></TableHead>
+                <TableHead><Button variant="ghost" onClick={() => requestSort('usuarioCedula')}>Cédula Usuario {getSortIcon('usuarioCedula')}</Button></TableHead>
+                <TableHead><Button variant="ghost" onClick={() => requestSort('tipoAccion')}>Acción {getSortIcon('tipoAccion')}</Button></TableHead>
+                <TableHead><Button variant="ghost" onClick={() => requestSort('nombreTabla')}>Tabla {getSortIcon('nombreTabla')}</Button></TableHead>
+                <TableHead><Button variant="ghost" onClick={() => requestSort('registroId')}>ID Registro {getSortIcon('registroId')}</Button></TableHead>
+                <TableHead><Button variant="ghost" onClick={() => requestSort('fechaHora')}>Fecha {getSortIcon('fechaHora')}</Button></TableHead>
                 <TableHead>Datos Anteriores</TableHead>
                 <TableHead>Datos Nuevos</TableHead>
               </TableRow>
-               <TableRow>
-                    <TableCell><Input placeholder="Filtrar ID..." name="id" value={filters.id} onChange={handleFilterChange} /></TableCell>
-                    <TableCell><Input placeholder="Filtrar Cédula..." name="usuarioCedula" value={filters.usuarioCedula} onChange={handleFilterChange} /></TableCell>
-                    <TableCell><Input placeholder="Filtrar Acción..." name="tipoAccion" value={filters.tipoAccion} onChange={handleFilterChange} /></TableCell>
-                    <TableCell><Input placeholder="Filtrar Tabla..." name="nombreTabla" value={filters.nombreTabla} onChange={handleFilterChange} /></TableCell>
-                    <TableCell><Input placeholder="Filtrar ID Registro..." name="registroId" value={filters.registroId} onChange={handleFilterChange} /></TableCell>
-                    <TableCell><Input placeholder="Filtrar Fecha..." name="fechaHora" value={filters.fechaHora} onChange={handleFilterChange} /></TableCell>
-                    <TableCell></TableCell>
-                    <TableCell></TableCell>
-                </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
@@ -156,7 +151,7 @@ export default function AuditPage() {
                         </TableCell>
                     </TableRow>
                  ))
-              ) : filteredRegistros.map((r) => (
+              ) : sortedAndFilteredRegistros.map((r) => (
                 <TableRow key={r.id}>
                   <TableCell>{r.id}</TableCell>
                   <TableCell>{r.usuarioCedula}</TableCell>
@@ -164,8 +159,8 @@ export default function AuditPage() {
                   <TableCell>{r.nombreTabla}</TableCell>
                   <TableCell>{r.registroId}</TableCell>
                   <TableCell>{new Date(r.fechaHora).toLocaleString()}</TableCell>
-                  <TableCell><pre className="text-xs whitespace-pre-wrap">{JSON.stringify(r.datosAnteriores, null, 2)}</pre></TableCell>
-                  <TableCell><pre className="text-xs whitespace-pre-wrap">{JSON.stringify(r.datosNuevos, null, 2)}</pre></TableCell>
+                  <TableCell><pre className="text-xs whitespace-pre-wrap max-w-xs">{JSON.stringify(r.datosAnteriores, null, 2)}</pre></TableCell>
+                  <TableCell><pre className="text-xs whitespace-pre-wrap max-w-xs">{JSON.stringify(r.datosNuevos, null, 2)}</pre></TableCell>
                 </TableRow>
               ))}
             </TableBody>

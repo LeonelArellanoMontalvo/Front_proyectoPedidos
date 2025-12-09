@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import {
   Table,
@@ -13,12 +13,13 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, UserCheck, UserX } from 'lucide-react';
+import { Users, UserCheck, UserX, ArrowUpDown } from 'lucide-react';
 import type { User } from '@/lib/types';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 const GET_USUARIOS_QUERY = `
   query {
@@ -47,17 +48,13 @@ const UPDATE_USUARIO_MUTATION = `
   }
 `;
 
+type SortKey = keyof User;
+
 export default function AdminCustomersPage() {
     const [customers, setCustomers] = useState<User[]>([]);
-    const [filteredCustomers, setFilteredCustomers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
-    const [filters, setFilters] = useState({
-      nombre: '',
-      cedula: '',
-      email: '',
-      telefono: '',
-      estado: '',
-    });
+    const [filters, setFilters] = useState({ nombre: '', cedula: '' });
+    const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'ascending' | 'descending' } | null>(null);
     const { toast } = useToast();
     
     const fetchCustomers = async () => {
@@ -65,10 +62,8 @@ export default function AdminCustomersPage() {
         try {
             const response = await axios.post('/graphql', { query: GET_USUARIOS_QUERY });
             const allUsers = response.data.data?.usuarios || [];
-            // Filter for users with CLIENTE role
             const clientUsers = allUsers.filter((user: User) => user.rol.nombre === 'CLIENTE');
             setCustomers(clientUsers);
-            setFilteredCustomers(clientUsers);
         } catch (error) {
             console.error("Error fetching customers:", error);
             toast({
@@ -83,27 +78,44 @@ export default function AdminCustomersPage() {
 
     useEffect(() => {
         fetchCustomers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    useEffect(() => {
-        let filteredData = customers;
-        if (filters.nombre) {
-            filteredData = filteredData.filter(c => `${c.nombre} ${c.apellido}`.toLowerCase().includes(filters.nombre.toLowerCase()));
+    const sortedAndFilteredCustomers = useMemo(() => {
+        let sortableItems = [...customers];
+        if (sortConfig !== null) {
+            sortableItems.sort((a, b) => {
+                if (a[sortConfig.key] < b[sortConfig.key]) {
+                    return sortConfig.direction === 'ascending' ? -1 : 1;
+                }
+                if (a[sortConfig.key] > b[sortConfig.key]) {
+                    return sortConfig.direction === 'ascending' ? 1 : -1;
+                }
+                return 0;
+            });
         }
-        if (filters.cedula) {
-            filteredData = filteredData.filter(c => c.cedula.toLowerCase().includes(filters.cedula.toLowerCase()));
+
+        return sortableItems.filter(c => 
+            (`${c.nombre} ${c.apellido}`.toLowerCase().includes(filters.nombre.toLowerCase())) &&
+            (c.cedula.toLowerCase().includes(filters.cedula.toLowerCase()))
+        );
+    }, [customers, filters, sortConfig]);
+
+    const requestSort = (key: SortKey) => {
+        let direction: 'ascending' | 'descending' = 'ascending';
+        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
+            direction = 'descending';
         }
-        if (filters.email) {
-            filteredData = filteredData.filter(c => c.email.toLowerCase().includes(filters.email.toLowerCase()));
-        }
-        if (filters.telefono) {
-            filteredData = filteredData.filter(c => c.telefono.toLowerCase().includes(filters.telefono.toLowerCase()));
-        }
-        if (filters.estado) {
-            filteredData = filteredData.filter(c => c.estado?.toLowerCase().includes(filters.estado.toLowerCase()));
-        }
-        setFilteredCustomers(filteredData);
-    }, [filters, customers]);
+        setSortConfig({ key, direction });
+    };
+
+    const getSortIcon = (key: SortKey) => {
+      if (!sortConfig || sortConfig.key !== key) {
+        return <ArrowUpDown className="w-4 h-4 ml-2 opacity-30" />;
+      }
+      return sortConfig.direction === 'ascending' ? '▲' : '▼';
+    };
+
 
     const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const { name, value } = e.target;
@@ -111,35 +123,27 @@ export default function AdminCustomersPage() {
     };
 
     const toggleCustomerStatus = async (cedula: string) => {
-        const originalCustomers = [...customers];
         const customerToUpdate = customers.find(c => c.cedula === cedula);
         if (!customerToUpdate) return;
-
         const newStatus = customerToUpdate.estado === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO';
         
-        // Optimistic update
-        const updateState = (userList: User[]) => userList.map(customer => 
-            customer.cedula === cedula ? {...customer, estado: newStatus} : customer
-        );
-        setCustomers(updateState);
-        setFilteredCustomers(updateState);
-
         try {
             await axios.post('/graphql', {
                 query: UPDATE_USUARIO_MUTATION,
-                variables: {
-                    cedula: cedula,
-                    nuevoEstado: newStatus
-                }
+                variables: { cedula: cedula, nuevoEstado: newStatus }
             });
+            
+            // Update state on success
+            const updatedCustomers = customers.map(customer => 
+                customer.cedula === cedula ? {...customer, estado: newStatus} : customer
+            );
+            setCustomers(updatedCustomers);
+
             toast({
                 title: "Estado del Cliente Actualizado",
                 description: `El cliente está ahora ${newStatus.toLowerCase()}.`
             });
         } catch (error) {
-            // Revert on error
-            setCustomers(originalCustomers);
-            setFilteredCustomers(originalCustomers);
             console.error("Error updating customer status:", error);
             toast({
                 variant: "destructive",
@@ -163,25 +167,21 @@ export default function AdminCustomersPage() {
       <Card>
         <CardHeader>
           <CardTitle>Clientes Registrados</CardTitle>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
+            <Input placeholder="Filtrar por nombre..." name="nombre" value={filters.nombre} onChange={handleFilterChange} />
+            <Input placeholder="Filtrar por cédula..." name="cedula" value={filters.cedula} onChange={handleFilterChange} />
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Cédula</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Teléfono</TableHead>
-                <TableHead>Estado</TableHead>
+                <TableHead><Button variant="ghost" onClick={() => requestSort('nombre')}>Cliente {getSortIcon('nombre')}</Button></TableHead>
+                <TableHead><Button variant="ghost" onClick={() => requestSort('cedula')}>Cédula {getSortIcon('cedula')}</Button></TableHead>
+                <TableHead><Button variant="ghost" onClick={() => requestSort('email')}>Email {getSortIcon('email')}</Button></TableHead>
+                <TableHead><Button variant="ghost" onClick={() => requestSort('telefono')}>Teléfono {getSortIcon('telefono')}</Button></TableHead>
+                <TableHead><Button variant="ghost" onClick={() => requestSort('estado')}>Estado {getSortIcon('estado')}</Button></TableHead>
                 <TableHead className="text-right">Activar/Desactivar</TableHead>
-              </TableRow>
-              <TableRow>
-                <TableCell><Input placeholder="Filtrar por nombre..." name="nombre" value={filters.nombre} onChange={handleFilterChange} /></TableCell>
-                <TableCell><Input placeholder="Filtrar por cédula..." name="cedula" value={filters.cedula} onChange={handleFilterChange} /></TableCell>
-                <TableCell><Input placeholder="Filtrar por email..." name="email" value={filters.email} onChange={handleFilterChange} /></TableCell>
-                <TableCell><Input placeholder="Filtrar por teléfono..." name="telefono" value={filters.telefono} onChange={handleFilterChange} /></TableCell>
-                <TableCell><Input placeholder="Filtrar por estado..." name="estado" value={filters.estado} onChange={handleFilterChange} /></TableCell>
-                <TableCell></TableCell>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -191,7 +191,7 @@ export default function AdminCustomersPage() {
                     Cargando clientes...
                   </TableCell>
                 </TableRow>
-              ) : filteredCustomers.map((customer) => (
+              ) : sortedAndFilteredCustomers.map((customer) => (
                 <TableRow key={customer.cedula}>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-3">
