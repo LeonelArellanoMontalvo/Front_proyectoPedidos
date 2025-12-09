@@ -32,6 +32,7 @@ import { ClipboardList, Eye } from 'lucide-react';
 import type { Order, OrderDetail } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
 
 const GET_PEDIDOS_QUERY = `
   query {
@@ -86,8 +87,16 @@ function getStatusVariant(status: Order['estadoPedido']) {
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [filters, setFilters] = useState({
+    id: '',
+    cliente: '',
+    fecha: '',
+    total: '',
+    estado: ''
+  });
   const { toast } = useToast();
 
   const fetchOrders = async () => {
@@ -95,7 +104,9 @@ export default function AdminOrdersPage() {
     try {
         const response = await axios.post('/graphql', { query: GET_PEDIDOS_QUERY });
         const allOrders = response.data.data?.pedidos || [];
-        setOrders(allOrders.sort((a: Order, b: Order) => new Date(b.fechaPedido).getTime() - new Date(a.fechaPedido).getTime()));
+        const sortedOrders = allOrders.sort((a: Order, b: Order) => new Date(b.fechaPedido).getTime() - new Date(a.fechaPedido).getTime());
+        setOrders(sortedOrders);
+        setFilteredOrders(sortedOrders);
     } catch (error) {
         console.error("Error fetching orders:", error);
         toast({
@@ -112,15 +123,41 @@ export default function AdminOrdersPage() {
     fetchOrders();
   }, []);
 
+  useEffect(() => {
+    let filteredData = orders;
+    if (filters.id) {
+        filteredData = filteredData.filter(o => o.id.toString().includes(filters.id));
+    }
+    if (filters.cliente) {
+        filteredData = filteredData.filter(o => (o.usuario?.nombre || o.usuarioCedula).toLowerCase().includes(filters.cliente.toLowerCase()));
+    }
+    if (filters.fecha) {
+        filteredData = filteredData.filter(o => new Date(o.fechaPedido).toLocaleDateString().toLowerCase().includes(filters.fecha.toLowerCase()));
+    }
+    if (filters.total) {
+        filteredData = filteredData.filter(o => o.montoTotal.toString().includes(filters.total));
+    }
+    if (filters.estado) {
+        filteredData = filteredData.filter(o => o.estadoPedido.toLowerCase().includes(filters.estado.toLowerCase()));
+    }
+    setFilteredOrders(filteredData);
+  }, [filters, orders]);
+
+  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFilters(prev => ({...prev, [name]: value}));
+  };
+
+
   const handleStatusChange = async (orderId: number, newStatus: Order['estadoPedido']) => {
     const originalOrders = [...orders];
     
     // Optimistic update
-    setOrders(currentOrders =>
-      currentOrders.map(order =>
+    const updateState = (orderList: Order[]) => orderList.map(order =>
         order.id === orderId ? { ...order, estadoPedido: newStatus } : order
-      )
     );
+    setOrders(updateState);
+    setFilteredOrders(updateState);
 
     try {
         await axios.post('/graphql', {
@@ -139,6 +176,7 @@ export default function AdminOrdersPage() {
     } catch (error) {
         // Revert on error
         setOrders(originalOrders);
+        setFilteredOrders(originalOrders);
         console.error("Error updating order status:", error);
         toast({
             variant: "destructive",
@@ -175,6 +213,15 @@ export default function AdminOrdersPage() {
                   <TableHead>Cambiar Estado</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
+                <TableRow>
+                  <TableCell><Input placeholder="Filtrar ID..." name="id" value={filters.id} onChange={handleFilterChange} /></TableCell>
+                  <TableCell><Input placeholder="Filtrar cliente..." name="cliente" value={filters.cliente} onChange={handleFilterChange} /></TableCell>
+                  <TableCell><Input placeholder="Filtrar fecha..." name="fecha" value={filters.fecha} onChange={handleFilterChange} /></TableCell>
+                  <TableCell><Input placeholder="Filtrar total..." name="total" value={filters.total} onChange={handleFilterChange} /></TableCell>
+                  <TableCell><Input placeholder="Filtrar estado..." name="estado" value={filters.estado} onChange={handleFilterChange} /></TableCell>
+                  <TableCell></TableCell>
+                  <TableCell></TableCell>
+                </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
@@ -183,7 +230,7 @@ export default function AdminOrdersPage() {
                           Cargando pedidos...
                       </TableCell>
                   </TableRow>
-                ) : orders.map((order) => (
+                ) : filteredOrders.map((order) => (
                   <TableRow key={order.id}>
                     <TableCell className="font-medium">#{order.id}</TableCell>
                     <TableCell>{order.usuario?.nombre || order.usuarioCedula}</TableCell>

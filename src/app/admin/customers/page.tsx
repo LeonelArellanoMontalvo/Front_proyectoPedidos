@@ -18,6 +18,7 @@ import type { User } from '@/lib/types';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
+import { Input } from '@/components/ui/input';
 
 const GET_USUARIOS_QUERY = `
   query {
@@ -48,7 +49,15 @@ const UPDATE_USUARIO_MUTATION = `
 
 export default function AdminCustomersPage() {
     const [customers, setCustomers] = useState<User[]>([]);
+    const [filteredCustomers, setFilteredCustomers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
+    const [filters, setFilters] = useState({
+      nombre: '',
+      cedula: '',
+      email: '',
+      telefono: '',
+      estado: '',
+    });
     const { toast } = useToast();
     
     const fetchCustomers = async () => {
@@ -59,6 +68,7 @@ export default function AdminCustomersPage() {
             // Filter for users with CLIENTE role
             const clientUsers = allUsers.filter((user: User) => user.rol.nombre === 'CLIENTE');
             setCustomers(clientUsers);
+            setFilteredCustomers(clientUsers);
         } catch (error) {
             console.error("Error fetching customers:", error);
             toast({
@@ -75,6 +85,31 @@ export default function AdminCustomersPage() {
         fetchCustomers();
     }, []);
 
+    useEffect(() => {
+        let filteredData = customers;
+        if (filters.nombre) {
+            filteredData = filteredData.filter(c => `${c.nombre} ${c.apellido}`.toLowerCase().includes(filters.nombre.toLowerCase()));
+        }
+        if (filters.cedula) {
+            filteredData = filteredData.filter(c => c.cedula.toLowerCase().includes(filters.cedula.toLowerCase()));
+        }
+        if (filters.email) {
+            filteredData = filteredData.filter(c => c.email.toLowerCase().includes(filters.email.toLowerCase()));
+        }
+        if (filters.telefono) {
+            filteredData = filteredData.filter(c => c.telefono.toLowerCase().includes(filters.telefono.toLowerCase()));
+        }
+        if (filters.estado) {
+            filteredData = filteredData.filter(c => c.estado?.toLowerCase().includes(filters.estado.toLowerCase()));
+        }
+        setFilteredCustomers(filteredData);
+    }, [filters, customers]);
+
+    const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const { name, value } = e.target;
+      setFilters(prev => ({...prev, [name]: value}));
+    };
+
     const toggleCustomerStatus = async (cedula: string) => {
         const originalCustomers = [...customers];
         const customerToUpdate = customers.find(c => c.cedula === cedula);
@@ -83,11 +118,11 @@ export default function AdminCustomersPage() {
         const newStatus = customerToUpdate.estado === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO';
         
         // Optimistic update
-        setCustomers(currentCustomers => 
-            currentCustomers.map(customer => 
-                customer.cedula === cedula ? {...customer, estado: newStatus} : customer
-            )
+        const updateState = (userList: User[]) => userList.map(customer => 
+            customer.cedula === cedula ? {...customer, estado: newStatus} : customer
         );
+        setCustomers(updateState);
+        setFilteredCustomers(updateState);
 
         try {
             await axios.post('/graphql', {
@@ -104,6 +139,7 @@ export default function AdminCustomersPage() {
         } catch (error) {
             // Revert on error
             setCustomers(originalCustomers);
+            setFilteredCustomers(originalCustomers);
             console.error("Error updating customer status:", error);
             toast({
                 variant: "destructive",
@@ -139,6 +175,14 @@ export default function AdminCustomersPage() {
                 <TableHead>Estado</TableHead>
                 <TableHead className="text-right">Activar/Desactivar</TableHead>
               </TableRow>
+              <TableRow>
+                <TableCell><Input placeholder="Filtrar por nombre..." name="nombre" value={filters.nombre} onChange={handleFilterChange} /></TableCell>
+                <TableCell><Input placeholder="Filtrar por cédula..." name="cedula" value={filters.cedula} onChange={handleFilterChange} /></TableCell>
+                <TableCell><Input placeholder="Filtrar por email..." name="email" value={filters.email} onChange={handleFilterChange} /></TableCell>
+                <TableCell><Input placeholder="Filtrar por teléfono..." name="telefono" value={filters.telefono} onChange={handleFilterChange} /></TableCell>
+                <TableCell><Input placeholder="Filtrar por estado..." name="estado" value={filters.estado} onChange={handleFilterChange} /></TableCell>
+                <TableCell></TableCell>
+              </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
@@ -147,7 +191,7 @@ export default function AdminCustomersPage() {
                     Cargando clientes...
                   </TableCell>
                 </TableRow>
-              ) : customers.map((customer) => (
+              ) : filteredCustomers.map((customer) => (
                 <TableRow key={customer.cedula}>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-3">

@@ -85,9 +85,16 @@ const UPDATE_PLATILLO_MUTATION = `
 
 export default function AdminDishesPage() {
   const [dishes, setDishes] = useState<Dish[]>([]);
+  const [filteredDishes, setFilteredDishes] = useState<Dish[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingDish, setEditingDish] = useState<Dish | null>(null);
+  const [filters, setFilters] = useState({
+    nombreItem: '',
+    categoriaNombre: '',
+    precio: '',
+    estado: ''
+  });
   const { toast } = useToast();
 
   const form = useForm<DishFormValues>({
@@ -108,6 +115,7 @@ export default function AdminDishesPage() {
         query: GET_PLATILLOS_QUERY,
       });
       setDishes(response.data.data?.platillos || []);
+      setFilteredDishes(response.data.data?.platillos || []);
     } catch (error) {
       console.error("Error fetching dishes:", error);
       toast({
@@ -123,6 +131,28 @@ export default function AdminDishesPage() {
   useEffect(() => {
     fetchDishes();
   }, []);
+
+  useEffect(() => {
+    let filteredData = dishes;
+    if (filters.nombreItem) {
+        filteredData = filteredData.filter(d => d.nombreItem.toLowerCase().includes(filters.nombreItem.toLowerCase()));
+    }
+    if (filters.categoriaNombre) {
+        filteredData = filteredData.filter(d => d.categoriaNombre.toLowerCase().includes(filters.categoriaNombre.toLowerCase()));
+    }
+    if (filters.precio) {
+        filteredData = filteredData.filter(d => d.precio.toString().includes(filters.precio));
+    }
+    if (filters.estado) {
+        filteredData = filteredData.filter(d => d.estado.toLowerCase().includes(filters.estado.toLowerCase()));
+    }
+    setFilteredDishes(filteredData);
+  }, [filters, dishes]);
+
+  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFilters(prev => ({...prev, [name]: value}));
+  };
 
   const handleEditClick = (dish: Dish) => {
     setEditingDish(dish);
@@ -153,11 +183,11 @@ export default function AdminDishesPage() {
     const originalDishes = [...dishes];
 
     // Optimistic update
-    setDishes(currentDishes =>
-        currentDishes.map(d => 
-            d.id === dish.id ? { ...d, estado: newStatus, disponible: newStatus === 'ACTIVO' } : d
-        )
+    const updateState = (dishList: Dish[]) => dishList.map(d => 
+        d.id === dish.id ? { ...d, estado: newStatus, disponible: newStatus === 'ACTIVO' } : d
     );
+    setDishes(updateState);
+    setFilteredDishes(updateState);
     
     try {
         await axios.post('/graphql', {
@@ -172,6 +202,7 @@ export default function AdminDishesPage() {
         toast({ title: "Estado del platillo actualizado", description: `"${dish.nombreItem}" ahora está ${newStatus.toLowerCase()}.`});
     } catch(error) {
         setDishes(originalDishes);
+        setFilteredDishes(originalDishes);
         console.error("Error updating dish status:", error);
         toast({
             variant: "destructive",
@@ -189,6 +220,7 @@ export default function AdminDishesPage() {
         d.id === editingDish.id ? { ...editingDish, ...data, estado: data.disponible ? 'ACTIVO' : 'DESCONTINUADO' } : d
       );
       setDishes(updatedDishes);
+      setFilteredDishes(updatedDishes);
       toast({ title: 'Platillo Actualizado', description: `"${data.nombreItem}" ha sido actualizado.` });
     } else {
       // Add new dish via API
@@ -221,6 +253,7 @@ export default function AdminDishesPage() {
                 estado: data.disponible ? 'ACTIVO' : 'DESCONTINUADO'
             };
             setDishes(currentDishes => [...currentDishes, newDish]);
+            setFilteredDishes(currentDishes => [...currentDishes, newDish]);
             toast({ title: 'Platillo Agregado', description: `"${data.nombreItem}" ha sido creado.` });
         } else {
              throw new Error(response.data.errors?.[0]?.message || "Error al crear el platillo");
@@ -302,6 +335,13 @@ export default function AdminDishesPage() {
                 <TableHead>Estado</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
+               <TableRow>
+                <TableCell><Input placeholder="Filtrar por nombre..." name="nombreItem" value={filters.nombreItem} onChange={handleFilterChange} /></TableCell>
+                <TableCell><Input placeholder="Filtrar por categoría..." name="categoriaNombre" value={filters.categoriaNombre} onChange={handleFilterChange} /></TableCell>
+                <TableCell><Input placeholder="Filtrar por precio..." name="precio" value={filters.precio} onChange={handleFilterChange} /></TableCell>
+                <TableCell><Input placeholder="Filtrar por estado..." name="estado" value={filters.estado} onChange={handleFilterChange} /></TableCell>
+                <TableCell></TableCell>
+              </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
@@ -310,7 +350,7 @@ export default function AdminDishesPage() {
                     Cargando platillos...
                   </TableCell>
                 </TableRow>
-              ) : dishes.map((dish) => (
+              ) : filteredDishes.map((dish) => (
                 <TableRow key={dish.id}>
                   <TableCell className="font-medium">{dish.nombreItem}</TableCell>
                   <TableCell>{dish.categoriaNombre}</TableCell>

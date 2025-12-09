@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ShieldCheck } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
 
 interface AuditLog {
     id: string;
@@ -43,7 +44,16 @@ const GET_AUDITORIAS_QUERY = `
 
 export default function AuditPage() {
   const [registros, setRegistros] = useState<AuditLog[]>([]);
+  const [filteredRegistros, setFilteredRegistros] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({
+    id: '',
+    usuarioCedula: '',
+    tipoAccion: '',
+    nombreTabla: '',
+    registroId: '',
+    fechaHora: '',
+  });
   const { toast } = useToast();
 
   useEffect(() => {
@@ -55,6 +65,7 @@ export default function AuditPage() {
             });
             const sortedData = response.data.data?.auditorias.sort((a: AuditLog, b: AuditLog) => new Date(b.fechaHora).getTime() - new Date(a.fechaHora).getTime());
             setRegistros(sortedData || []);
+            setFilteredRegistros(sortedData || []);
         } catch (err) {
             console.error("Error cargando auditoría:", err);
             toast({
@@ -68,6 +79,35 @@ export default function AuditPage() {
     };
     fetchAuditLogs();
   }, [toast]);
+
+  useEffect(() => {
+    let filteredData = registros;
+    if (filters.id) {
+        filteredData = filteredData.filter(log => log.id.toLowerCase().includes(filters.id.toLowerCase()));
+    }
+    if (filters.usuarioCedula) {
+        filteredData = filteredData.filter(log => log.usuarioCedula.toLowerCase().includes(filters.usuarioCedula.toLowerCase()));
+    }
+    if (filters.tipoAccion) {
+        filteredData = filteredData.filter(log => log.tipoAccion.toLowerCase().includes(filters.tipoAccion.toLowerCase()));
+    }
+    if (filters.nombreTabla) {
+        filteredData = filteredData.filter(log => log.nombreTabla.toLowerCase().includes(filters.nombreTabla.toLowerCase()));
+    }
+    if (filters.registroId) {
+        filteredData = filteredData.filter(log => log.registroId.toLowerCase().includes(filters.registroId.toLowerCase()));
+    }
+    if (filters.fechaHora) {
+        filteredData = filteredData.filter(log => new Date(log.fechaHora).toLocaleString().toLowerCase().includes(filters.fechaHora.toLowerCase()));
+    }
+
+    setFilteredRegistros(filteredData);
+  }, [filters, registros]);
+
+  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFilters(prev => ({...prev, [name]: value}));
+  };
 
   return (
     <div className="space-y-8">
@@ -96,6 +136,16 @@ export default function AuditPage() {
                 <TableHead>Datos Anteriores</TableHead>
                 <TableHead>Datos Nuevos</TableHead>
               </TableRow>
+               <TableRow>
+                    <TableCell><Input placeholder="Filtrar ID..." name="id" value={filters.id} onChange={handleFilterChange} /></TableCell>
+                    <TableCell><Input placeholder="Filtrar Cédula..." name="usuarioCedula" value={filters.usuarioCedula} onChange={handleFilterChange} /></TableCell>
+                    <TableCell><Input placeholder="Filtrar Acción..." name="tipoAccion" value={filters.tipoAccion} onChange={handleFilterChange} /></TableCell>
+                    <TableCell><Input placeholder="Filtrar Tabla..." name="nombreTabla" value={filters.nombreTabla} onChange={handleFilterChange} /></TableCell>
+                    <TableCell><Input placeholder="Filtrar ID Registro..." name="registroId" value={filters.registroId} onChange={handleFilterChange} /></TableCell>
+                    <TableCell><Input placeholder="Filtrar Fecha..." name="fechaHora" value={filters.fechaHora} onChange={handleFilterChange} /></TableCell>
+                    <TableCell></TableCell>
+                    <TableCell></TableCell>
+                </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
@@ -106,7 +156,7 @@ export default function AuditPage() {
                         </TableCell>
                     </TableRow>
                  ))
-              ) : registros.map((r) => (
+              ) : filteredRegistros.map((r) => (
                 <TableRow key={r.id}>
                   <TableCell>{r.id}</TableCell>
                   <TableCell>{r.usuarioCedula}</TableCell>
