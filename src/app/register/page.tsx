@@ -36,7 +36,7 @@ const formSchema = z.object({
   telefono: z.string().min(10, { message: "El teléfono debe tener 10 dígitos." }).max(10, { message: "El teléfono debe tener 10 dígitos." }),
   email: z.string().email({ message: "Por favor, ingresa un correo válido." }),
   direccion_principal: z.string().min(5, { message: "La dirección es requerida." }),
-  contrasena: z.string().min(6, { message: "La contraseña debe tener al menos 6 caracteres." }),
+  contrasena: z.string().min(6, { message: "La contraseña debe tener al menos 6 caracteres." })
 });
 
 export default function RegisterPage() {
@@ -53,7 +53,7 @@ export default function RegisterPage() {
       telefono: "",
       email: "",
       direccion_principal: "",
-      contrasena: "",
+      contrasena: ""
     },
   });
 

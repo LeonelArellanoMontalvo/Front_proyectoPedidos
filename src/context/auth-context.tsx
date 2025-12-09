@@ -122,7 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             email: userData.email,
             password: userData.contrasena,
             direccionPrincipal: userData.direccion_principal,
-            rolId: 1, // Hardcoded to 1 for CLIENTE
+            rolId: 2, // Hardcoded to 1 for CLIENTE
           },
         },
       });

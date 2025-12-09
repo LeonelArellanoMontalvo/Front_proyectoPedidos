@@ -4,7 +4,6 @@ import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/context/auth-context';
 import { CartProvider } from '@/context/cart-context';
 import Header from '@/components/header';
-import Footer from '@/components/footer';
 
 export const metadata: Metadata = {
   title: 'Pedido Listo',
@@ -32,7 +31,6 @@ export default function RootLayout({
             <div className="flex min-h-screen flex-col">
               <Header />
               <main className="flex-grow">{children}</main>
-              <Footer />
             </div>
             <Toaster />
           </CartProvider>
