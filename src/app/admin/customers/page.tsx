@@ -37,6 +37,15 @@ const GET_USUARIOS_QUERY = `
   }
 `;
 
+const UPDATE_USUARIO_MUTATION = `
+  mutation UpdateUsuarioEstado($updateUsuarioInput: UpdateUsuarioInput!) {
+    updateUsuario(updateUsuarioInput: $updateUsuarioInput) {
+      cedula
+      estado
+    }
+  }
+`;
+
 export default function AdminCustomersPage() {
     const [customers, setCustomers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
@@ -66,21 +75,41 @@ export default function AdminCustomersPage() {
         fetchCustomers();
     }, []);
 
-    const toggleCustomerStatus = (cedula: string) => {
-        // This will need a mutation later
+    const toggleCustomerStatus = async (cedula: string) => {
+        const originalCustomers = [...customers];
+        const newStatus = customers.find(c => c.cedula === cedula)?.estado === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO';
+        
+        // Optimistic update
         setCustomers(currentCustomers => 
-            currentCustomers.map(customer => {
-                if (customer.cedula === cedula) {
-                    const newStatus = customer.estado === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO';
-                    toast({
-                        title: "Estado del Cliente Actualizado",
-                        description: `El cliente ${customer.nombre} está ahora ${newStatus.toLowerCase()}.`
-                    });
-                    return {...customer, estado: newStatus};
+            currentCustomers.map(customer => 
+                customer.cedula === cedula ? {...customer, estado: newStatus} : customer
+            )
+        );
+
+        try {
+            await axios.post('/graphql', {
+                query: UPDATE_USUARIO_MUTATION,
+                variables: {
+                    updateUsuarioInput: {
+                        cedula,
+                        estado: newStatus
+                    }
                 }
-                return customer;
-            })
-        )
+            });
+            toast({
+                title: "Estado del Cliente Actualizado",
+                description: `El cliente está ahora ${newStatus.toLowerCase()}.`
+            });
+        } catch (error) {
+            // Revert on error
+            setCustomers(originalCustomers);
+            console.error("Error updating customer status:", error);
+            toast({
+                variant: "destructive",
+                title: "Error al actualizar",
+                description: "No se pudo cambiar el estado del cliente."
+            });
+        }
     }
 
 
