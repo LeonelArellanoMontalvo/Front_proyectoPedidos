@@ -56,11 +56,6 @@ const CREATE_PLATILLO_MUTATION = `
     createPlatillo(createPlatilloInput: $createPlatilloInput) {
       id
       nombreItem
-      precio
-      categoriaNombre
-      descripcion
-      estado
-      disponible
     }
   }
 `;
@@ -174,7 +169,7 @@ export default function AdminDishesPage() {
             nombreItem: data.nombreItem,
             precio: data.precio,
             categoriaNombre: data.categoriaNombre,
-            disponible: data.disponible
+            estado: data.disponible ? 'ACTIVO' : 'DESCONTINUADO' // Use 'estado' instead of 'disponible' for the mutation
         };
 
         if (data.descripcion) {
@@ -186,9 +181,18 @@ export default function AdminDishesPage() {
           variables: { createPlatilloInput }
         });
 
-        const newDish = response.data.data?.createPlatillo;
+        const createdDishData = response.data.data?.createPlatillo;
 
-        if (newDish) {
+        if (createdDishData) {
+            // Since the API only returns a partial object, we construct the full object for the UI
+            const newDish: Dish = {
+                ...createdDishData,
+                categoriaNombre: data.categoriaNombre,
+                descripcion: data.descripcion,
+                precio: data.precio,
+                disponible: data.disponible,
+                estado: data.disponible ? 'ACTIVO' : 'DESCONTINUADO'
+            };
             setDishes(currentDishes => [...currentDishes, newDish]);
             toast({ title: 'Platillo Agregado', description: `"${data.nombreItem}" ha sido creado.` });
         } else {
