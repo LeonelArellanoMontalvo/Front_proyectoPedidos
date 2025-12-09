@@ -54,6 +54,7 @@ const GET_PEDIDOS_QUERY = `
         cantidad
         precioUnitario
         subtotal
+        notasAdicionales
         platillo {
           id
           nombreItem
@@ -240,13 +241,16 @@ export default function AdminOrdersPage() {
                   <Separator />
                   <div>
                       <h4 className="font-semibold mb-2">Platillos:</h4>
-                      <ul className="space-y-2">
+                      <ul className="space-y-3">
                           {selectedOrder.detalles.map((detail: OrderDetail) => (
-                              <li key={detail.id} className="flex justify-between items-center text-sm">
+                              <li key={detail.id} className="flex justify-between items-start text-sm border-b pb-2 last:border-b-0 last:pb-0">
                                   <div>
                                       <p><span className="font-medium">{detail.cantidad}x</span> {detail.platillo.nombreItem}</p>
+                                      <p className="text-xs text-muted-foreground italic">
+                                        Notas: {detail.notasAdicionales || 'S/N'}
+                                      </p>
                                   </div>
-                                  <p>${detail.subtotal.toFixed(2)}</p>
+                                  <p className="font-medium">${detail.subtotal.toFixed(2)}</p>
                               </li>
                           ))}
                       </ul>
