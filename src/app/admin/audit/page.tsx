@@ -50,7 +50,7 @@ export default function AuditPage() {
     const fetchAuditLogs = async () => {
         setLoading(true);
         try {
-            const response = await axios.post("https://foodapp-g0jx.onrender.com/graphql", { 
+            const response = await axios.post("/graphql", { 
                 query: GET_AUDITORIAS_QUERY 
             });
             const sortedData = response.data.data?.auditorias.sort((a: AuditLog, b: AuditLog) => new Date(b.fechaHora).getTime() - new Date(a.fechaHora).getTime());
