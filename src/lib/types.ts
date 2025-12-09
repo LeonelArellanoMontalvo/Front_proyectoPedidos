@@ -16,9 +16,9 @@ export interface User {
 }
 
 export interface Dish {
-  item_id: number;
-  categoria_nombre: string;
-  nombre_item: string;
+  id: number;
+  categoriaNombre: string;
+  nombreItem: string;
   descripcion?: string;
   precio: number;
   disponible: boolean;

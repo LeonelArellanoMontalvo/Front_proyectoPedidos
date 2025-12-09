@@ -65,9 +65,9 @@ export function Cart() {
             <ScrollArea className="flex-1">
               <div className="flex flex-col gap-6 p-6 pr-6">
                 {cartItems.map((item) => (
-                  <div key={item.item_id} className="flex items-start gap-4">
+                  <div key={item.id} className="flex items-start gap-4">
                     <div className="flex-1">
-                      <h4 className="font-semibold">{item.nombre_item}</h4>
+                      <h4 className="font-semibold">{item.nombreItem}</h4>
                       <p className="text-sm text-muted-foreground">
                         ${item.precio.toFixed(2)}
                       </p>
@@ -76,7 +76,7 @@ export function Cart() {
                           variant="outline"
                           size="icon"
                           className="h-7 w-7"
-                          onClick={() => updateQuantity(item.item_id, item.quantity - 1)}
+                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
                         >
                           <Minus className="h-4 w-4" />
                         </Button>
@@ -85,7 +85,7 @@ export function Cart() {
                           variant="outline"
                           size="icon"
                           className="h-7 w-7"
-                          onClick={() => updateQuantity(item.item_id, item.quantity + 1)}
+                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
                         >
                           <Plus className="h-4 w-4" />
                         </Button>
@@ -95,7 +95,7 @@ export function Cart() {
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                      onClick={() => removeFromCart(item.item_id)}
+                      onClick={() => removeFromCart(item.id)}
                     >
                       <X className="h-4 w-4" />
                     </Button>

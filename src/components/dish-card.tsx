@@ -23,7 +23,7 @@ export function DishCard({ dish }: DishCardProps) {
   return (
     <Card className="flex flex-col overflow-hidden transition-shadow duration-300 hover:shadow-lg">
       <CardHeader>
-        <CardTitle className="font-headline text-2xl">{dish.nombre_item}</CardTitle>
+        <CardTitle className="font-headline text-2xl">{dish.nombreItem}</CardTitle>
         <CardDescription className="text-base h-12 overflow-hidden">{dish.descripcion}</CardDescription>
       </CardHeader>
       <CardContent className="flex-grow"></CardContent>

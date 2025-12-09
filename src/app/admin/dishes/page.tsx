@@ -42,8 +42,8 @@ import { useToast } from '@/hooks/use-toast';
 import axios from 'axios';
 
 const dishFormSchema = z.object({
-  nombre_item: z.string().min(3, { message: 'El nombre es requerido.' }),
-  categoria_nombre: z.string().min(3, { message: 'La categoría es requerida.' }),
+  nombreItem: z.string().min(3, { message: 'El nombre es requerido.' }),
+  categoriaNombre: z.string().min(3, { message: 'La categoría es requerida.' }),
   descripcion: z.string().optional(),
   precio: z.coerce.number().min(0, { message: 'El precio debe ser positivo.' }),
   disponible: z.boolean(),
@@ -54,10 +54,10 @@ type DishFormValues = z.infer<typeof dishFormSchema>;
 const CREATE_PLATILLO_MUTATION = `
   mutation createPlatillo($createPlatilloInput: CreatePlatilloInput!) {
     createPlatillo(createPlatilloInput: $createPlatilloInput) {
-      item_id
-      nombre_item
+      id
+      nombreItem
       precio
-      categoria_nombre
+      categoriaNombre
       descripcion
       estado
       disponible
@@ -66,11 +66,11 @@ const CREATE_PLATILLO_MUTATION = `
 `;
 
 const GET_PLATILLOS_QUERY = `
-  query FindAllPlatillos {
+  query {
     platillos {
-      item_id
-      nombre_item
-      categoria_nombre
+      id
+      categoriaNombre
+      nombreItem
       descripcion
       precio
       disponible
@@ -89,8 +89,8 @@ export default function AdminDishesPage() {
   const form = useForm<DishFormValues>({
     resolver: zodResolver(dishFormSchema),
     defaultValues: {
-      nombre_item: '',
-      categoria_nombre: '',
+      nombreItem: '',
+      categoriaNombre: '',
       descripcion: '',
       precio: 0,
       disponible: true,
@@ -123,8 +123,8 @@ export default function AdminDishesPage() {
   const handleEditClick = (dish: Dish) => {
     setEditingDish(dish);
     form.reset({
-        nombre_item: dish.nombre_item,
-        categoria_nombre: dish.categoria_nombre,
+        nombreItem: dish.nombreItem,
+        categoriaNombre: dish.categoriaNombre,
         descripcion: dish.descripcion,
         precio: dish.precio,
         disponible: dish.disponible,
@@ -134,7 +134,13 @@ export default function AdminDishesPage() {
 
   const handleAddNewClick = () => {
     setEditingDish(null);
-    form.reset();
+    form.reset({
+      nombreItem: '',
+      categoriaNombre: '',
+      descripcion: '',
+      precio: 0,
+      disponible: true,
+    });
     setIsDialogOpen(true);
   };
 
@@ -142,9 +148,9 @@ export default function AdminDishesPage() {
     // This will need a dedicated mutation later
     setDishes(currentDishes =>
       currentDishes.map(dish => {
-        if (dish.item_id === dishId) {
+        if (dish.id === dishId) {
           const newStatus = dish.estado === 'ACTIVO' ? 'DESCONTINUADO' : 'ACTIVO';
-          toast({ title: "Estado del platillo actualizado", description: `"${dish.nombre_item}" ahora está ${newStatus.toLowerCase()}.`});
+          toast({ title: "Estado del platillo actualizado", description: `"${dish.nombreItem}" ahora está ${newStatus.toLowerCase()}.`});
           return { ...dish, estado: newStatus, disponible: newStatus === 'ACTIVO' };
         }
         return dish;
@@ -157,17 +163,17 @@ export default function AdminDishesPage() {
       // Logic to update a dish will be implemented later
       console.log("Updating dish (not implemented yet):", data);
       const updatedDishes = dishes.map(d =>
-        d.item_id === editingDish.item_id ? { ...editingDish, ...data, estado: data.disponible ? 'ACTIVO' : 'DESCONTINUADO' } : d
+        d.id === editingDish.id ? { ...editingDish, ...data, estado: data.disponible ? 'ACTIVO' : 'DESCONTINUADO' } : d
       );
       setDishes(updatedDishes);
-      toast({ title: 'Platillo Actualizado', description: `"${data.nombre_item}" ha sido actualizado.` });
+      toast({ title: 'Platillo Actualizado', description: `"${data.nombreItem}" ha sido actualizado.` });
     } else {
       // Add new dish via API
       try {
         const createPlatilloInput: any = {
-            nombre_item: data.nombre_item,
+            nombreItem: data.nombreItem,
             precio: data.precio,
-            categoria_nombre: data.categoria_nombre,
+            categoriaNombre: data.categoriaNombre,
             disponible: data.disponible
         };
 
@@ -184,7 +190,7 @@ export default function AdminDishesPage() {
 
         if (newDish) {
             setDishes(currentDishes => [...currentDishes, newDish]);
-            toast({ title: 'Platillo Agregado', description: `"${data.nombre_item}" ha sido creado.` });
+            toast({ title: 'Platillo Agregado', description: `"${data.nombreItem}" ha sido creado.` });
         } else {
              throw new Error(response.data.errors?.[0]?.message || "Error al crear el platillo");
         }
@@ -224,10 +230,10 @@ export default function AdminDishesPage() {
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField control={form.control} name="nombre_item" render={({ field }) => (
+              <FormField control={form.control} name="nombreItem" render={({ field }) => (
                   <FormItem><FormLabel>Nombre</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
               )} />
-              <FormField control={form.control} name="categoria_nombre" render={({ field }) => (
+              <FormField control={form.control} name="categoriaNombre" render={({ field }) => (
                   <FormItem><FormLabel>Categoría</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
               )} />
               <FormField control={form.control} name="descripcion" render={({ field }) => (
@@ -274,9 +280,9 @@ export default function AdminDishesPage() {
                   </TableCell>
                 </TableRow>
               ) : dishes.map((dish) => (
-                <TableRow key={dish.item_id}>
-                  <TableCell className="font-medium">{dish.nombre_item}</TableCell>
-                  <TableCell>{dish.categoria_nombre}</TableCell>
+                <TableRow key={dish.id}>
+                  <TableCell className="font-medium">{dish.nombreItem}</TableCell>
+                  <TableCell>{dish.categoriaNombre}</TableCell>
                   <TableCell>${dish.precio.toFixed(2)}</TableCell>
                   <TableCell>
                     <Badge variant={dish.estado === 'ACTIVO' ? 'default' : 'destructive'}>{dish.estado}</Badge>
@@ -285,7 +291,7 @@ export default function AdminDishesPage() {
                     <Button variant="outline" size="icon" onClick={() => handleEditClick(dish)}>
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button variant="outline" size="icon" onClick={() => toggleDishStatus(dish.item_id)}>
+                    <Button variant="outline" size="icon" onClick={() => toggleDishStatus(dish.id)}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </TableCell>

@@ -57,10 +57,11 @@ export default function OrdersPage() {
                   <p className="font-semibold mb-2">Detalles del pedido:</p>
                   <ul className="space-y-2">
                     {order.detalles.map(detail => {
-                      const dish = allDishes.find(d => d.item_id === detail.item_id);
+                      // This logic needs to be updated. `allDishes` is now empty and has a different structure.
+                      // const dish = allDishes.find(d => d.id === detail.item_id);
                       return (
                         <li key={detail.detalle_id} className="flex justify-between items-center text-sm">
-                          <span>{detail.cantidad}x {dish?.nombre_item || 'Platillo no encontrado'}</span>
+                          <span>{detail.cantidad}x Platillo ID: {detail.item_id}</span>
                           <span>${detail.subtotal.toFixed(2)}</span>
                         </li>
                       );

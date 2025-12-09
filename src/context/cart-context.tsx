@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, ReactNode, useMemo } from 'react';
+import { createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
 import type { CartItem, Dish } from '@/lib/types';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { useToast } from '@/hooks/use-toast';
@@ -23,22 +23,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const addToCart = (item: Dish) => {
     setCartItems(prevItems => {
-      const existingItem = prevItems.find(i => i.item_id === item.item_id);
+      const existingItem = prevItems.find(i => i.id === item.id);
       if (existingItem) {
         return prevItems.map(i =>
-          i.item_id === item.item_id ? { ...i, quantity: i.quantity + 1 } : i
+          i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
         );
       }
       return [...prevItems, { ...item, quantity: 1 }];
     });
     toast({
       title: "Platillo agregado",
-      description: `${item.nombre_item} fue agregado a tu pedido.`,
+      description: `${item.nombreItem} fue agregado a tu pedido.`,
     })
   };
 
   const removeFromCart = (itemId: number) => {
-    setCartItems(prevItems => prevItems.filter(i => i.item_id !== itemId));
+    setCartItems(prevItems => prevItems.filter(i => i.id !== itemId));
   };
 
   const updateQuantity = (itemId: number, quantity: number) => {
@@ -47,7 +47,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     } else {
       setCartItems(prevItems =>
         prevItems.map(i =>
-          i.item_id === itemId ? { ...i, quantity } : i
+          i.id === itemId ? { ...i, quantity } : i
         )
       );
     }

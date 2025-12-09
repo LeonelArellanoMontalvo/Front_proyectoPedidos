@@ -7,113 +7,38 @@ import type { User, Dish, Order } from './types';
 export const usuarios: User[] = [
   {
     cedula: '1234567890',
-    rol_id: 2,
+    rol: { nombre: 'ADMINISTRADOR'},
     nombre: 'Admin',
     apellido: 'Principal',
     email: 'admin@pedidolisto.com',
     direccion_principal: 'Av. Siempre Viva 123',
-    contrasena_hash: 'admin123', // In a real app, this would be a hash
     estado: 'ACTIVO',
     telefono: '0987654321',
   },
   {
     cedula: '0987654321',
-    rol_id: 1,
+    rol: { nombre: 'CLIENTE' },
     nombre: 'Carlos',
     apellido: 'Santana',
     email: 'carlos@cliente.com',
     direccion_principal: 'Calle Falsa 456',
-    contrasena_hash: 'cliente123', // In a real app, this would be a hash
     estado: 'ACTIVO',
     telefono: '0999888777',
   },
   {
     cedula: '1122334455',
-    rol_id: 1,
+    rol: { nombre: 'CLIENTE' },
     nombre: 'Ana',
     apellido: 'Guerra',
     email: 'ana@cliente.com',
     direccion_principal: 'Boulevard de los Sueños Rotos 789',
-    contrasena_hash: 'cliente456',
     estado: 'ACTIVO',
     telefono: '0911223344',
   },
 ];
 
-export const platillos: Dish[] = [
-  {
-    item_id: 1,
-    categoria_nombre: 'Platos Fuertes',
-    nombre_item: 'Lomo Saltado',
-    descripcion: 'Trozos de lomo fino salteados con cebolla, tomate y papas fritas. Acompañado de arroz.',
-    precio: 12.50,
-    disponible: true,
-    estado: 'ACTIVO',
-  },
-  {
-    item_id: 2,
-    categoria_nombre: 'Platos Fuertes',
-    nombre_item: 'Aji de Gallina',
-    descripcion: 'Pechuga de gallina deshilachada en una cremosa salsa de ají amarillo. Servido con papas y arroz.',
-    precio: 10.00,
-    disponible: true,
-    estado: 'ACTIVO',
-  },
-  {
-    item_id: 3,
-    categoria_nombre: 'Entradas',
-    nombre_item: 'Causa Rellena de Pollo',
-    descripcion: 'Suave puré de papa amarilla sazonado con ají, relleno de pollo y mayonesa.',
-    precio: 7.00,
-    disponible: true,
-    estado: 'ACTIVO',
-  },
-  {
-    item_id: 4,
-    categoria_nombre: 'Sopas',
-    nombre_item: 'Sopa a la Criolla',
-    descripcion: 'Concentrada sopa de carne con fideos, leche, huevo y un toque de ají panca.',
-    precio: 8.50,
-    disponible: true,
-    estado: 'ACTIVO',
-  },
-  {
-    item_id: 5,
-    categoria_nombre: 'Bebidas',
-    nombre_item: 'Chicha Morada',
-    descripcion: 'Bebida tradicional a base de maíz morado, piña, canela y clavo.',
-    precio: 2.50,
-    disponible: true,
-    estado: 'ACTIVO',
-  },
-  {
-    item_id: 6,
-    categoria_nombre: 'Postres',
-    nombre_item: 'Suspiro a la Limeña',
-    descripcion: 'Dulce de manjar blanco cubierto con merengue al oporto.',
-    precio: 5.00,
-    disponible: true,
-    estado: 'ACTIVO',
-  },
-  {
-    item_id: 7,
-    categoria_nombre: 'Platos Fuertes',
-    nombre_item: 'Ceviche Mixto',
-    descripcion: 'Pescado fresco y mariscos marinados en jugo de limón, con cebolla, cilantro y ají limo.',
-    precio: 15.00,
-    disponible: true,
-    estado: 'ACTIVO',
-  },
-  {
-    item_id: 8,
-    categoria_nombre: 'Platos Fuertes',
-    nombre_item: 'Arroz con Mariscos',
-    descripcion: 'Jugoso arroz cocido con mariscos variados y un aderezo especial de la casa.',
-    precio: 14.00,
-    disponible: false,
-    estado: 'DESCONTINUADO',
-  },
-];
+// This data is now fetched from the API, but kept for reference
+export const platillos: Dish[] = [];
 
 export const pedidos: Order[] = [
   {

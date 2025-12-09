@@ -8,11 +8,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import type { Dish } from '@/lib/types';
 
 const GET_PLATILLOS_QUERY = `
-  query FindAllPlatillos {
+  query {
     platillos {
-      item_id
-      nombre_item
-      categoria_nombre
+      id
+      categoriaNombre
+      nombreItem
       descripcion
       precio
       disponible
@@ -67,7 +67,7 @@ export default function Home() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
           {dishes.map((dish) => (
             <DishCard 
-              key={dish.item_id} 
+              key={dish.id} 
               dish={dish} 
             />
           ))}
