@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -37,7 +37,6 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import type { Dish } from '@/lib/types';
-import { platillos as mockDishes } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
 import axios from 'axios';
 
@@ -54,10 +53,10 @@ type DishFormValues = z.infer<typeof dishFormSchema>;
 const CREATE_PLATILLO_MUTATION = `
   mutation createPlatillo($createPlatilloInput: CreatePlatilloInput!) {
     createPlatillo(createPlatilloInput: $createPlatilloInput) {
-      id: item_id
-      nombreItem: nombre_item
+      item_id
+      nombre_item
       precio
-      categoriaNombre: categoria_nombre
+      categoria_nombre
       descripcion
       estado
       disponible
@@ -65,9 +64,23 @@ const CREATE_PLATILLO_MUTATION = `
   }
 `;
 
+const GET_PLATILLOS_QUERY = `
+  query FindAllPlatillos {
+    platillos {
+      item_id
+      nombre_item
+      categoria_nombre
+      descripcion
+      precio
+      disponible
+      estado
+    }
+  }
+`;
 
 export default function AdminDishesPage() {
-  const [dishes, setDishes] = useState<Dish[]>(mockDishes);
+  const [dishes, setDishes] = useState<Dish[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingDish, setEditingDish] = useState<Dish | null>(null);
   const { toast } = useToast();
@@ -82,6 +95,29 @@ export default function AdminDishesPage() {
       disponible: true,
     },
   });
+
+  const fetchDishes = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.post('/graphql', {
+        query: GET_PLATILLOS_QUERY,
+      });
+      setDishes(response.data.data?.platillos || []);
+    } catch (error) {
+      console.error("Error fetching dishes:", error);
+      toast({
+        variant: "destructive",
+        title: "Error al cargar platillos",
+        description: "No se pudieron obtener los datos de la API.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDishes();
+  }, []);
 
   const handleEditClick = (dish: Dish) => {
     setEditingDish(dish);
@@ -102,6 +138,7 @@ export default function AdminDishesPage() {
   };
 
   const toggleDishStatus = (dishId: number) => {
+    // This will need a dedicated mutation later
     setDishes(currentDishes =>
       currentDishes.map(dish => {
         if (dish.item_id === dishId) {
@@ -127,9 +164,9 @@ export default function AdminDishesPage() {
       // Add new dish via API
       try {
         const createPlatilloInput: any = {
-            nombreItem: data.nombre_item,
+            nombre_item: data.nombre_item,
             precio: data.precio,
-            categoriaNombre: data.categoria_nombre,
+            categoria_nombre: data.categoria_nombre,
             disponible: data.disponible
         };
 
@@ -145,17 +182,7 @@ export default function AdminDishesPage() {
         const newDish = response.data.data?.createPlatillo;
 
         if (newDish) {
-            // The API response field names need to be mapped to our Dish type.
-            const formattedDish : Dish = {
-                item_id: newDish.id,
-                nombre_item: newDish.nombreItem,
-                categoria_nombre: newDish.categoriaNombre,
-                descripcion: newDish.descripcion,
-                precio: newDish.precio,
-                disponible: newDish.disponible,
-                estado: newDish.estado,
-            };
-            setDishes(currentDishes => [...currentDishes, formattedDish]);
+            setDishes(currentDishes => [...currentDishes, newDish]);
             toast({ title: 'Platillo Agregado', description: `"${data.nombre_item}" ha sido creado.` });
         } else {
              throw new Error(response.data.errors?.[0]?.message || "Error al crear el platillo");
@@ -165,7 +192,7 @@ export default function AdminDishesPage() {
         toast({
             variant: "destructive",
             title: "Error al crear platillo",
-            description: error.message || "No se pudo conectar a la API.",
+            description: error.response?.data?.errors?.[0]?.message || error.message || "No se pudo conectar a la API.",
         });
       }
     }
@@ -239,7 +266,13 @@ export default function AdminDishesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {dishes.map((dish) => (
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="h-24 text-center">
+                    Cargando platillos...
+                  </TableCell>
+                </TableRow>
+              ) : dishes.map((dish) => (
                 <TableRow key={dish.item_id}>
                   <TableCell className="font-medium">{dish.nombre_item}</TableCell>
                   <TableCell>{dish.categoria_nombre}</TableCell>
