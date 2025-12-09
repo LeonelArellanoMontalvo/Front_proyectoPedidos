@@ -1,4 +1,4 @@
-# Pedido Listo - Sistema de Pedidos de Comida
+ .# Pedido Listo - Sistema de Pedidos de Comida
 
 Este es un sistema de pedidos de comida en línea construido con Next.js y una API de GraphQL. Permite a los clientes explorar un menú, realizar pedidos y a los administradores gestionar la operativa del restaurante.
 
