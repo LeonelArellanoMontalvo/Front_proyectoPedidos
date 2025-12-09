@@ -18,16 +18,23 @@ import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 
 export function Cart() {
   const { cartItems, removeFromCart, updateQuantity, cartTotal, cartCount, clearCart } = useCart();
   const { isAuthenticated, user } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
 
   const handleSubmitOrder = () => {
     // This is where you would call the API to create the order
-    console.log("Submitting order for user:", user?.cedula, { items: cartItems, total: cartTotal });
+    console.log("Submitting order for user:", user?.email, { items: cartItems, total: cartTotal });
     toast({
       title: "¡Pedido Enviado!",
       description: "Tu pedido ha sido recibido y está siendo procesado.",
@@ -41,7 +48,7 @@ export function Cart() {
       <SheetTrigger asChild>
         <Button variant="outline" size="icon" className="relative">
           <ShoppingCart className="h-5 w-5" />
-          {cartCount > 0 && (
+          {isClient && cartCount > 0 && (
             <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
               {cartCount}
             </span>
