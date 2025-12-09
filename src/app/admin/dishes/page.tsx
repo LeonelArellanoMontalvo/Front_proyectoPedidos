@@ -74,6 +74,15 @@ const GET_PLATILLOS_QUERY = `
   }
 `;
 
+const UPDATE_PLATILLO_MUTATION = `
+    mutation updatePlatillo($updatePlatilloInput: UpdatePlatilloInput!) {
+        updatePlatillo(updatePlatilloInput: $updatePlatilloInput) {
+            id
+            estado
+        }
+    }
+`;
+
 export default function AdminDishesPage() {
   const [dishes, setDishes] = useState<Dish[]>([]);
   const [loading, setLoading] = useState(true);
@@ -139,23 +148,42 @@ export default function AdminDishesPage() {
     setIsDialogOpen(true);
   };
 
-  const toggleDishStatus = (dishId: number) => {
-    // This will need a dedicated mutation later
+  const toggleDishStatus = async (dish: Dish) => {
+    const newStatus = dish.estado === 'ACTIVO' ? 'DESCONTINUADO' : 'ACTIVO';
+    const originalDishes = [...dishes];
+
+    // Optimistic update
     setDishes(currentDishes =>
-      currentDishes.map(dish => {
-        if (dish.id === dishId) {
-          const newStatus = dish.estado === 'ACTIVO' ? 'DESCONTINUADO' : 'ACTIVO';
-          toast({ title: "Estado del platillo actualizado", description: `"${dish.nombreItem}" ahora está ${newStatus.toLowerCase()}.`});
-          return { ...dish, estado: newStatus, disponible: newStatus === 'ACTIVO' };
-        }
-        return dish;
-      })
+        currentDishes.map(d => 
+            d.id === dish.id ? { ...d, estado: newStatus, disponible: newStatus === 'ACTIVO' } : d
+        )
     );
+    
+    try {
+        await axios.post('/graphql', {
+            query: UPDATE_PLATILLO_MUTATION,
+            variables: {
+                updatePlatilloInput: {
+                    id: dish.id,
+                    estado: newStatus
+                }
+            }
+        });
+        toast({ title: "Estado del platillo actualizado", description: `"${dish.nombreItem}" ahora está ${newStatus.toLowerCase()}.`});
+    } catch(error) {
+        setDishes(originalDishes);
+        console.error("Error updating dish status:", error);
+        toast({
+            variant: "destructive",
+            title: "Error al actualizar",
+            description: "No se pudo cambiar el estado del platillo."
+        });
+    }
   };
 
   async function onSubmit(data: DishFormValues) {
     if (editingDish) {
-      // Logic to update a dish will be implemented later
+      // Logic to update a dish will be implemented later (needs a new mutation)
       console.log("Updating dish (not implemented yet):", data);
       const updatedDishes = dishes.map(d =>
         d.id === editingDish.id ? { ...editingDish, ...data, estado: data.disponible ? 'ACTIVO' : 'DESCONTINUADO' } : d
@@ -169,7 +197,7 @@ export default function AdminDishesPage() {
             nombreItem: data.nombreItem,
             precio: data.precio,
             categoriaNombre: data.categoriaNombre,
-            estado: data.disponible ? 'ACTIVO' : 'DESCONTINUADO' // Use 'estado' instead of 'disponible' for the mutation
+            estado: data.disponible ? 'ACTIVO' : 'DESCONTINUADO'
         };
 
         if (data.descripcion) {
@@ -184,13 +212,12 @@ export default function AdminDishesPage() {
         const createdDishData = response.data.data?.createPlatillo;
 
         if (createdDishData) {
-            // Since the API only returns a partial object, we construct the full object for the UI
             const newDish: Dish = {
                 ...createdDishData,
-                categoriaNombre: data.categoriaNombre,
                 descripcion: data.descripcion,
                 precio: data.precio,
                 disponible: data.disponible,
+                categoriaNombre: data.categoriaNombre,
                 estado: data.disponible ? 'ACTIVO' : 'DESCONTINUADO'
             };
             setDishes(currentDishes => [...currentDishes, newDish]);
@@ -295,7 +322,7 @@ export default function AdminDishesPage() {
                     <Button variant="outline" size="icon" onClick={() => handleEditClick(dish)}>
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button variant="outline" size="icon" onClick={() => toggleDishStatus(dish.id)}>
+                    <Button variant="outline" size="icon" onClick={() => toggleDishStatus(dish)}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </TableCell>

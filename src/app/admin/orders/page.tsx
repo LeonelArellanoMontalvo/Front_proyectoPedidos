@@ -18,11 +18,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ClipboardList } from 'lucide-react';
-import type { Order } from '@/lib/types';
+import { ClipboardList, Eye } from 'lucide-react';
+import type { Order, OrderDetail } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import { Separator } from '@/components/ui/separator';
 
 const GET_PEDIDOS_QUERY = `
   query {
@@ -77,6 +86,7 @@ function getStatusVariant(status: Order['estadoPedido']) {
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const { toast } = useToast();
 
   const fetchOrders = async () => {
@@ -160,13 +170,14 @@ export default function AdminOrdersPage() {
                 <TableHead>Fecha</TableHead>
                 <TableHead>Total</TableHead>
                 <TableHead>Estado Actual</TableHead>
-                <TableHead className="text-right">Cambiar Estado</TableHead>
+                <TableHead>Cambiar Estado</TableHead>
+                <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center">
+                    <TableCell colSpan={7} className="h-24 text-center">
                         Cargando pedidos...
                     </TableCell>
                 </TableRow>
@@ -179,7 +190,7 @@ export default function AdminOrdersPage() {
                   <TableCell>
                     <Badge variant={getStatusVariant(order.estadoPedido)}>{order.estadoPedido}</Badge>
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell>
                     <Select
                       value={order.estadoPedido}
                       onValueChange={(value: Order['estadoPedido']) =>
@@ -187,17 +198,23 @@ export default function AdminOrdersPage() {
                       }
                       disabled={order.estadoPedido === 'Entregado' || order.estadoPedido === 'Cancelado'}
                     >
-                      <SelectTrigger className="w-[150px] ml-auto">
+                      <SelectTrigger className="w-[150px]">
                         <SelectValue placeholder="Cambiar estado" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Pendiente">Pendiente</SelectItem>
                         <SelectItem value="Autorizado">Autorizado</SelectItem>
-                        <SelectItem value="Enviado">Enviado</SelectItem>
-                        <SelectItem value="Entregado">Entregado</SelectItem>
-                        <SelectItem value="Cancelado">Cancelado</SelectItem>
                       </SelectContent>
                     </Select>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Dialog>
+                        <DialogTrigger asChild>
+                            <Button variant="outline" size="icon" onClick={() => setSelectedOrder(order)}>
+                                <Eye className="h-4 w-4" />
+                            </Button>
+                        </DialogTrigger>
+                    </Dialog>
                   </TableCell>
                 </TableRow>
               ))}
@@ -205,6 +222,45 @@ export default function AdminOrdersPage() {
           </Table>
         </CardContent>
       </Card>
+      
+      {selectedOrder && (
+         <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Detalles del Pedido #{selectedOrder.id}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+                <div>
+                    <h4 className="font-semibold">Cliente:</h4>
+                    <p>{selectedOrder.usuario?.nombre || 'N/A'}</p>
+                    <p className="text-sm text-muted-foreground">{selectedOrder.usuario?.email || selectedOrder.usuarioCedula}</p>
+                </div>
+                 <div>
+                    <h4 className="font-semibold">Entrega:</h4>
+                    <p>{selectedOrder.tipoEntrega} - {selectedOrder.direccionEntrega}</p>
+                </div>
+                <Separator />
+                <div>
+                    <h4 className="font-semibold mb-2">Platillos:</h4>
+                    <ul className="space-y-2">
+                        {selectedOrder.detalles.map((detail: OrderDetail) => (
+                            <li key={detail.id} className="flex justify-between items-center text-sm">
+                                <div>
+                                    <p><span className="font-medium">{detail.cantidad}x</span> {detail.platillo.nombreItem}</p>
+                                </div>
+                                <p>${detail.subtotal.toFixed(2)}</p>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+                <Separator />
+                <div className="flex justify-between items-center font-bold text-lg">
+                    <p>Monto Total:</p>
+                    <p>${selectedOrder.montoTotal.toFixed(2)}</p>
+                </div>
+            </div>
+         </DialogContent>
+      )}
+
     </div>
   );
 }
