@@ -1,10 +1,10 @@
-
 "use client";
 
-import { createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
+import { createContext, useContext, ReactNode, useMemo } from 'react';
 import type { CartItem, Dish } from '@/lib/types';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { useToast } from '@/hooks/use-toast';
+import { calculateCartSubtotal } from '@/lib/calculations';
 
 interface CartContextType {
   cartItems: CartItem[];
@@ -68,7 +68,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const cartTotal = useMemo(() => {
-    return cartItems.reduce((total, item) => total + item.precio * item.quantity, 0);
+    return calculateCartSubtotal(cartItems);
   }, [cartItems]);
   
   const cartCount = useMemo(() => {
