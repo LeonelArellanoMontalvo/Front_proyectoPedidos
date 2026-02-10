@@ -21,7 +21,10 @@ interface DishCardProps {
 
 export function DishCard({ dish }: DishCardProps) {
   const { addToCart } = useCart();
-  const { isAdmin } = useAuth();
+  const { isAuthenticated, isCliente } = useAuth();
+
+  // Solo habilitar si no está logueado (para que pida login) o si es cliente
+  const canAddToCart = !isAuthenticated || isCliente;
 
   return (
     <Card className="flex flex-col overflow-hidden transition-shadow duration-300 hover:shadow-lg">
@@ -32,7 +35,7 @@ export function DishCard({ dish }: DishCardProps) {
       <CardContent className="flex-grow"></CardContent>
       <CardFooter className="flex items-center justify-between">
         <p className="text-2xl font-bold text-primary">${dish.precio.toFixed(2)}</p>
-        <Button onClick={() => addToCart(dish)} disabled={isAdmin}>
+        <Button onClick={() => addToCart(dish)} disabled={!canAddToCart}>
           <PlusCircle className="mr-2 h-5 w-5" />
           Agregar
         </Button>

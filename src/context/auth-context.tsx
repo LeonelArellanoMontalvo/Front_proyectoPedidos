@@ -15,6 +15,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isAdmin: boolean;
   isVendedor: boolean;
+  isCliente: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -25,6 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isVendedor, setIsVendedor] = useState(false);
+  const [isCliente, setIsCliente] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -32,10 +34,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsAuthenticated(true);
       setIsAdmin(user.rol.nombre === 'ADMINISTRADOR');
       setIsVendedor(user.rol.nombre === 'VENDEDOR');
+      setIsCliente(user.rol.nombre === 'CLIENTE');
     } else {
       setIsAuthenticated(false);
       setIsAdmin(false);
       setIsVendedor(false);
+      setIsCliente(false);
     }
   }, [user, token]);
 
@@ -141,7 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const value = { user, login, logout, register, isAuthenticated, isAdmin, isVendedor };
+  const value = { user, login, logout, register, isAuthenticated, isAdmin, isVendedor, isCliente };
 
   return (
     <AuthContext.Provider value={value}>

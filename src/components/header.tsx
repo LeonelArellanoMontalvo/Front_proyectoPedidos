@@ -19,10 +19,13 @@ import { Cart } from '@/components/cart';
 import { Logo } from '@/components/logo';
 
 export default function Header() {
-  const { isAuthenticated, user, logout, isAdmin } = useAuth();
+  const { isAuthenticated, user, logout, isAdmin, isCliente } = useAuth();
 
   const userInitial = user?.nombre?.[0]?.toUpperCase() || 'U';
   const userLastNameInitial = user?.apellido?.[0]?.toUpperCase() || '';
+
+  // Solo mostramos el carrito a clientes o usuarios no autenticados
+  const showCart = !isAuthenticated || isCliente;
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -30,7 +33,7 @@ export default function Header() {
         <Logo />
         <div className="flex flex-1 items-center justify-end space-x-4">
           <nav className="flex items-center space-x-2">
-            {!isAdmin && <Cart />}
+            {showCart && <Cart />}
             
             {isAuthenticated && user ? (
               <DropdownMenu>
@@ -51,11 +54,11 @@ export default function Header() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  {isAdmin ? (
+                  {isAdmin || !isCliente ? (
                      <DropdownMenuItem asChild>
                         <Link href="/admin/orders">
                           <Shield className="mr-2 h-4 w-4" />
-                          <span>Panel de Admin</span>
+                          <span>Panel Administrativo</span>
                         </Link>
                       </DropdownMenuItem>
                   ) : (

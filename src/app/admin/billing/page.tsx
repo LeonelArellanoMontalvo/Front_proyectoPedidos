@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
@@ -11,7 +12,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ReceiptText, Search, Eye, FileText, Printer, PlusCircle, Trash2 } from 'lucide-react';
+import { ReceiptText, Search, Eye, FileText, Printer, PlusCircle, Trash2, ArrowUpDown } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
@@ -46,6 +47,8 @@ interface InvoiceDetailForm {
   precioUnitario: number;
 }
 
+type SortKey = keyof Invoice | 'usuarioNombre';
+
 export default function BillingPage() {
   const { isVendedor } = useAuth();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -53,6 +56,7 @@ export default function BillingPage() {
   const [dishes, setDishes] = useState<Dish[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
   const [filter, setFilter] = useState('');
+  const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'ascending' | 'descending' } | null>({ key: 'fechaFactura', direction: 'descending' });
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const { toast } = useToast();
@@ -101,11 +105,50 @@ export default function BillingPage() {
     fetchInitialData();
   }, [toast]);
 
-  const filteredInvoices = invoices.filter(inv => 
-    inv.numeroFactura.toLowerCase().includes(filter.toLowerCase()) ||
-    `${inv.usuario.nombre} ${inv.usuario.apellido}`.toLowerCase().includes(filter.toLowerCase()) ||
-    inv.usuarioCedula.includes(filter)
-  );
+  const requestSort = (key: SortKey) => {
+    let direction: 'ascending' | 'descending' = 'ascending';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const sortedAndFilteredInvoices = useMemo(() => {
+    let result = invoices.filter(inv => 
+      inv.numeroFactura.toLowerCase().includes(filter.toLowerCase()) ||
+      `${inv.usuario.nombre} ${inv.usuario.apellido}`.toLowerCase().includes(filter.toLowerCase()) ||
+      inv.usuarioCedula.includes(filter)
+    );
+
+    if (sortConfig !== null) {
+      result.sort((a, b) => {
+        let aValue: any = a[sortConfig.key as keyof Invoice];
+        let bValue: any = b[sortConfig.key as keyof Invoice];
+
+        if (sortConfig.key === 'usuarioNombre') {
+          aValue = `${a.usuario.nombre} ${a.usuario.apellido}`;
+          bValue = `${b.usuario.nombre} ${b.usuario.apellido}`;
+        }
+
+        if (aValue < bValue) {
+          return sortConfig.direction === 'ascending' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortConfig.direction === 'ascending' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+
+    return result;
+  }, [invoices, filter, sortConfig]);
+
+  const getSortIcon = (key: SortKey) => {
+    if (!sortConfig || sortConfig.key !== key) {
+      return <ArrowUpDown className="w-4 h-4 ml-2 opacity-30" />;
+    }
+    return sortConfig.direction === 'ascending' ? ' ▲' : ' ▼';
+  };
 
   const selectedCustomerData = customers.find(c => c.cedula === selectedCustomerCedula);
 
@@ -371,11 +414,31 @@ export default function BillingPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Número de Factura</TableHead>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>Fecha</TableHead>
-                  <TableHead className="print:hidden">Tipo</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead>
+                    <Button variant="ghost" onClick={() => requestSort('numeroFactura')}>
+                      Número {getSortIcon('numeroFactura')}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button variant="ghost" onClick={() => requestSort('usuarioNombre')}>
+                      Cliente {getSortIcon('usuarioNombre')}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button variant="ghost" onClick={() => requestSort('fechaFactura')}>
+                      Fecha {getSortIcon('fechaFactura')}
+                    </Button>
+                  </TableHead>
+                  <TableHead className="print:hidden">
+                    <Button variant="ghost" onClick={() => requestSort('tipoFactura')}>
+                      Tipo {getSortIcon('tipoFactura')}
+                    </Button>
+                  </TableHead>
+                  <TableHead className="text-right">
+                    <Button variant="ghost" onClick={() => requestSort('montoTotal')}>
+                      Total {getSortIcon('montoTotal')}
+                    </Button>
+                  </TableHead>
                   <TableHead className="text-center print:hidden">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
@@ -386,8 +449,8 @@ export default function BillingPage() {
                       <TableCell colSpan={6}><Skeleton className="h-8 w-full" /></TableCell>
                     </TableRow>
                   ))
-                ) : filteredInvoices.length > 0 ? (
-                  filteredInvoices.map((inv) => (
+                ) : sortedAndFilteredInvoices.length > 0 ? (
+                  sortedAndFilteredInvoices.map((inv) => (
                     <TableRow key={inv.id}>
                       <TableCell className="font-mono font-bold text-primary">{inv.numeroFactura}</TableCell>
                       <TableCell>
