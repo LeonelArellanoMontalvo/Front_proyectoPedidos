@@ -5,13 +5,11 @@ import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Printer, ArrowLeft, Loader2 } from "lucide-react";
 import { Invoice } from "@/lib/types";
 import { formatCurrency } from "@/lib/calculations";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
 
 export default function AdminInvoicePrintPage() {
   const params = useParams();
@@ -56,7 +54,7 @@ export default function AdminInvoicePrintPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen gap-4">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p>Cargando factura para impresión...</p>
+        <p>Generando documento...</p>
       </div>
     );
   }
@@ -64,133 +62,153 @@ export default function AdminInvoicePrintPage() {
   if (!invoice) return null;
 
   return (
-    <div className="min-h-screen bg-muted/30 pb-20 print:bg-white print:min-h-0 print:pb-0">
-      {/* Barra de herramientas - No se imprime */}
-      <div className="sticky top-0 z-50 w-full bg-background border-b px-4 py-3 print:hidden shadow-sm">
-        <div className="container mx-auto flex items-center justify-between">
-          <Button variant="ghost" onClick={() => router.back()}>
+    <div className="min-h-screen bg-gray-100 print:bg-white">
+      {/* Barra de herramientas de vista previa - NO SE IMPRIME */}
+      <div className="sticky top-0 z-50 w-full bg-white border-b px-4 py-3 print:hidden shadow-sm">
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+          <Button variant="outline" size="sm" onClick={() => router.back()}>
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Volver
+            Regresar
           </Button>
-          <div className="flex items-center gap-2">
-             <span className="text-sm font-medium text-muted-foreground hidden sm:inline">Vista Previa de Impresión</span>
-             <Button onClick={handlePrint} className="bg-primary hover:bg-primary/90">
-                <Printer className="mr-2 h-4 w-4" />
-                Imprimir Factura
-              </Button>
+          <div className="flex items-center gap-4">
+            <span className="text-sm font-medium text-gray-500">Vista de Impresión Oficial</span>
+            <Button onClick={handlePrint} size="sm">
+              <Printer className="mr-2 h-4 w-4" />
+              Imprimir ahora
+            </Button>
           </div>
         </div>
       </div>
 
-      {/* Contenedor de la Factura */}
-      <div className="container mx-auto px-4 py-8 print:p-0">
-        <Card id="printable-invoice" className="max-w-3xl mx-auto shadow-none border-none sm:border print:m-0 print:p-0 print:w-full print:border-none">
-          <CardContent className="p-8 sm:p-12 print:p-0">
-            <div className="flex justify-between items-start mb-8">
-              <div>
-                <h1 className="text-3xl font-bold text-primary mb-1">Pedido Listo</h1>
-                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Comprobante de Venta Electrónico</p>
-              </div>
-              <div className="text-right">
-                <div className="bg-primary/10 px-4 py-2 rounded-lg inline-block mb-2 print:border print:border-primary/20">
-                    <p className="font-mono font-bold text-primary text-xl">{invoice.numeroFactura}</p>
-                </div>
-                <p className="text-sm text-muted-foreground">{new Date(invoice.fechaFactura).toLocaleString()}</p>
-              </div>
+      {/* Formato de Factura Profesional */}
+      <div className="max-w-4xl mx-auto p-8 print:p-0">
+        <div id="printable-document" className="bg-white p-12 shadow-sm border print:shadow-none print:border-none print:p-0">
+          
+          {/* Encabezado */}
+          <div className="flex justify-between items-start mb-10">
+            <div>
+              <h1 className="text-4xl font-black text-black mb-1">PEDIDO LISTO</h1>
+              <p className="text-sm font-bold tracking-widest text-gray-500">RUC: 1005299489001</p>
+              <p className="text-xs text-gray-500 max-w-xs">Matriz: Av. Principal y 10 de Agosto, Ibarra, Ecuador. Tel: (06) 2645-123</p>
             </div>
-
-            <Separator className="mb-8" />
-
-            <div className="grid grid-cols-2 gap-12 mb-10 text-sm">
-              <div className="space-y-1">
-                <p className="font-bold text-muted-foreground uppercase text-[10px] mb-2">Información del Cliente</p>
-                <p className="text-base font-bold">{invoice.usuario.nombre} {invoice.usuario.apellido}</p>
-                <p><span className="font-semibold">Cédula/RUC:</span> {invoice.usuarioCedula}</p>
-                <p><span className="font-semibold">Teléfono:</span> {invoice.usuario.telefono}</p>
-                <p className="italic text-muted-foreground">{invoice.usuario.direccionPrincipal}</p>
-              </div>
-              <div className="text-right space-y-1">
-                <p className="font-bold text-muted-foreground uppercase text-[10px] mb-2">Detalles del Documento</p>
-                <p><span className="font-semibold">Tipo:</span> {invoice.tipoFactura}</p>
-                <div className="pt-2">
-                    <Badge variant="outline" className="font-mono">{invoice.estadoFactura}</Badge>
-                </div>
-              </div>
+            <div className="text-right border-2 border-black p-4 min-w-[250px]">
+              <p className="text-lg font-bold">FACTURA</p>
+              <p className="text-2xl font-mono font-bold text-primary">{invoice.numeroFactura}</p>
+              <p className="text-xs mt-2">FECHA DE EMISIÓN</p>
+              <p className="font-medium">{new Date(invoice.fechaFactura).toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
             </div>
+          </div>
 
-            <div className="border rounded-lg overflow-hidden mb-8 print:border-gray-300">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/50 border-b print:bg-gray-100">
-                  <tr>
-                    <th className="px-4 py-3 text-left font-bold">Cant.</th>
-                    <th className="px-4 py-3 text-left font-bold">Descripción</th>
-                    <th className="px-4 py-3 text-right font-bold">P. Unit.</th>
-                    <th className="px-4 py-3 text-right font-bold">Subtotal</th>
+          {/* Información del Cliente */}
+          <div className="grid grid-cols-2 gap-8 mb-10 text-sm">
+            <div className="space-y-2">
+              <p className="border-b border-black font-bold text-[10px] pb-1 uppercase">DATOS DEL CLIENTE</p>
+              <p><span className="font-bold">SEÑOR(ES):</span> {invoice.usuario.nombre} {invoice.usuario.apellido}</p>
+              <p><span className="font-bold">C.I. / RUC:</span> {invoice.usuarioCedula}</p>
+              <p><span className="font-bold">DIRECCIÓN:</span> {invoice.usuario.direccionPrincipal}</p>
+            </div>
+            <div className="space-y-2">
+              <p className="border-b border-black font-bold text-[10px] pb-1 uppercase">DETALLES ADICIONALES</p>
+              <p><span className="font-bold">TIPO:</span> {invoice.tipoFactura}</p>
+              <p><span className="font-bold">ESTADO:</span> {invoice.estadoFactura}</p>
+              <p><span className="font-bold">TELÉFONO:</span> {invoice.usuario.telefono}</p>
+            </div>
+          </div>
+
+          {/* Tabla de Productos */}
+          <div className="mb-10">
+            <table className="w-full text-sm border-collapse border border-black">
+              <thead>
+                <tr className="bg-gray-100 print:bg-gray-100 border-b border-black">
+                  <th className="border-r border-black p-2 text-center w-20">CANT.</th>
+                  <th className="border-r border-black p-2 text-left">DESCRIPCIÓN</th>
+                  <th className="border-r border-black p-2 text-right w-32">P. UNITARIO</th>
+                  <th className="p-2 text-right w-32">SUBTOTAL</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-300">
+                {invoice.detalles.map((det) => (
+                  <tr key={det.id} className="border-b border-gray-300">
+                    <td className="border-r border-black p-2 text-center">{det.cantidad}</td>
+                    <td className="border-r border-black p-2">
+                      <span className="font-bold">{det.platillo?.nombreItem || det.descripcionItem}</span>
+                      {det.platillo?.categoriaNombre && <span className="text-[10px] text-gray-500 block">{det.platillo.categoriaNombre}</span>}
+                    </td>
+                    <td className="border-r border-black p-2 text-right">{formatCurrency(Number(det.precioUnitario))}</td>
+                    <td className="p-2 text-right font-medium">{formatCurrency(Number(det.subtotal))}</td>
                   </tr>
-                </thead>
-                <tbody className="divide-y print:divide-gray-200">
-                  {invoice.detalles.map((det) => (
-                    <tr key={det.id}>
-                      <td className="px-4 py-4">{det.cantidad}</td>
-                      <td className="px-4 py-4 font-medium">{det.platillo?.nombreItem || det.descripcionItem}</td>
-                      <td className="px-4 py-4 text-right">{formatCurrency(Number(det.precioUnitario))}</td>
-                      <td className="px-4 py-4 text-right font-semibold">{formatCurrency(Number(det.subtotal))}</td>
-                    </tr>
-                  ))}
+                ))}
+                {/* Filas vacías para rellenar el formato si hay pocos ítems */}
+                {invoice.detalles.length < 5 && Array.from({ length: 5 - invoice.detalles.length }).map((_, i) => (
+                   <tr key={`empty-${i}`} className="border-b border-gray-200 h-8">
+                     <td className="border-r border-black"></td>
+                     <td className="border-r border-black"></td>
+                     <td className="border-r border-black"></td>
+                     <td></td>
+                   </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Totales y Firmas */}
+          <div className="flex justify-between items-start">
+            <div className="w-1/2 mt-10">
+               <div className="border-t border-black w-48 text-center pt-2">
+                 <p className="text-[10px] font-bold">FIRMA AUTORIZADA</p>
+               </div>
+               <p className="text-[9px] text-gray-400 mt-10">Original: Cliente | Copia: Emisor</p>
+            </div>
+            <div className="w-[280px]">
+              <table className="w-full text-sm border border-black border-t-0">
+                <tbody>
+                  <tr>
+                    <td className="border-r border-black p-2 font-bold bg-gray-50">SUBTOTAL</td>
+                    <td className="p-2 text-right">{formatCurrency(Number(invoice.montoSubtotal))}</td>
+                  </tr>
+                  <tr>
+                    <td className="border-r border-black p-2 font-bold bg-gray-50">IVA 12%</td>
+                    <td className="p-2 text-right">{formatCurrency(Number(invoice.montoIva))}</td>
+                  </tr>
+                  <tr className="border-t border-black bg-gray-100">
+                    <td className="border-r border-black p-2 font-black text-lg">TOTAL</td>
+                    <td className="p-2 text-right font-black text-xl">{formatCurrency(Number(invoice.montoTotal))}</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
+          </div>
 
-            <div className="flex justify-end mb-12">
-              <div className="w-full max-w-[280px] space-y-3 bg-muted/20 p-6 rounded-xl border border-muted print:bg-gray-50 print:border-gray-200">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Subtotal:</span>
-                  <span className="font-medium">{formatCurrency(Number(invoice.montoSubtotal))}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">IVA (12%):</span>
-                  <span className="font-medium">{formatCurrency(Number(invoice.montoIva))}</span>
-                </div>
-                <Separator />
-                <div className="flex justify-between items-center pt-1">
-                  <span className="text-base font-bold">Total a Pagar:</span>
-                  <span className="text-2xl font-bold text-primary">{formatCurrency(Number(invoice.montoTotal))}</span>
-                </div>
-              </div>
-            </div>
+          <div className="mt-20 text-center text-[10px] text-gray-500 border-t pt-4 border-dashed border-gray-300">
+            <p>GRACIAS POR SU PREFERENCIA - PEDIDO LISTO ES CALIDAD Y SABOR</p>
+            <p className="mt-1">Documento generado electrónicamente | Sistema de Gestión Pedido Listo v1.0</p>
+          </div>
 
-            <div className="text-center text-[10px] text-muted-foreground border-t pt-6 space-y-1 print:border-gray-200">
-              <p className="font-bold uppercase">¡Gracias por su compra!</p>
-              <p>Este documento es un comprobante válido de la transacción realizada.</p>
-              <p className="italic">Generado por el Sistema de Pedidos "Pedido Listo"</p>
-            </div>
-          </CardContent>
-        </Card>
+        </div>
       </div>
 
       <style jsx global>{`
         @media print {
           @page {
             margin: 0;
-            size: auto;
+            size: A4;
           }
           body {
-            background: white !important;
+            background-color: white !important;
             margin: 0;
             padding: 0;
           }
           .print\:hidden {
             display: none !important;
           }
-          #printable-invoice {
+          #printable-document {
             width: 100% !important;
-            margin: 0 !important;
-            padding: 2cm !important;
             border: none !important;
-            box-shadow: none !important;
+            padding: 1.5cm !important;
           }
-          .min-h-screen {
-            min-height: auto !important;
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
         }
       `}</style>
