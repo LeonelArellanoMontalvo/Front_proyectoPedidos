@@ -1,21 +1,25 @@
+
 "use client";
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Package, Users, ClipboardList, Shield, ShieldCheck } from 'lucide-react';
+import { Package, Users, ClipboardList, Shield, ShieldCheck, ReceiptText } from 'lucide-react';
+import { useAuth } from '@/context/auth-context';
 
 import { cn } from '@/lib/utils';
 import { Logo } from './logo';
 
-const navItems = [
-  { href: '/admin/orders', label: 'Pedidos', icon: ClipboardList },
-  { href: '/admin/dishes', label: 'Platillos', icon: Package },
-  { href: '/admin/customers', label: 'Clientes', icon: Users },
-  { href: '/admin/audit', label: 'Auditoría', icon: ShieldCheck },
-];
-
 export default function AdminSidebar() {
   const pathname = usePathname();
+  const { isAdmin } = useAuth();
+
+  const navItems = [
+    { href: '/admin/orders', label: 'Pedidos', icon: ClipboardList, roles: ['ADMINISTRADOR', 'VENDEDOR'] },
+    { href: '/admin/dishes', label: 'Platillos', icon: Package, roles: ['ADMINISTRADOR'] },
+    { href: '/admin/customers', label: 'Clientes', icon: Users, roles: ['ADMINISTRADOR'] },
+    { href: '/admin/billing', label: 'Facturación', icon: ReceiptText, roles: ['ADMINISTRADOR', 'VENDEDOR'] },
+    { href: '/admin/audit', label: 'Auditoría', icon: ShieldCheck, roles: ['ADMINISTRADOR'] },
+  ];
 
   return (
     <aside className="w-64 flex-shrink-0 border-r bg-card text-card-foreground">
@@ -25,6 +29,14 @@ export default function AdminSidebar() {
             </div>
             <nav className="flex-1 space-y-2 p-4">
             {navItems.map((item) => {
+                // Filtrar por rol si es necesario
+                if (item.roles && !item.roles.includes(isAdmin ? 'ADMINISTRADOR' : 'VENDEDOR')) {
+                    // Si el usuario es vendedor y el item es solo para admin, no lo mostramos
+                    if (!isAdmin && item.roles.includes('ADMINISTRADOR') && !item.roles.includes('VENDEDOR')) {
+                        return null;
+                    }
+                }
+
                 const Icon = item.icon;
                 const isActive = pathname.startsWith(item.href);
                 return (
@@ -45,7 +57,7 @@ export default function AdminSidebar() {
             <div className="mt-auto p-4 border-t">
                 <div className="flex items-center gap-3">
                     <Shield className="h-5 w-5 text-primary" />
-                    <p className="font-semibold">Panel de Administrador</p>
+                    <p className="font-semibold">Panel de {isAdmin ? 'Administrador' : 'Vendedor'}</p>
                 </div>
             </div>
         </div>

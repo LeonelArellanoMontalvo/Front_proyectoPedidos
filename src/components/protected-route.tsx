@@ -8,7 +8,7 @@ import { Skeleton } from "./ui/skeleton";
 
 interface ProtectedRouteProps {
   children: ReactNode;
-  allowedRoles: ('CLIENTE' | 'ADMINISTRADOR')[];
+  allowedRoles: ('CLIENTE' | 'ADMINISTRADOR' | 'VENDEDOR')[];
 }
 
 /**
@@ -16,10 +16,11 @@ interface ProtectedRouteProps {
  * Si el rol no coincide, redirige al usuario a su área permitida.
  */
 export default function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
-  const { isAuthenticated, user, isAdmin } = useAuth();
+  const { isAuthenticated, user, isAdmin, isVendedor } = useAuth();
   const router = useRouter();
   
   const isAuthStatusKnown = typeof isAuthenticated === 'boolean';
+  const isStaff = isAdmin || isVendedor;
 
   useEffect(() => {
     if (isAuthStatusKnown) {
@@ -31,16 +32,14 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
       
       // 2. Si el rol no está en la lista de permitidos, redirigir
       const userRole = user?.rol.nombre;
-      if (!userRole || !allowedRoles.includes(userRole)) {
-        // Si intenta entrar a admin siendo cliente va al home, 
-        // si intenta entrar a cliente siendo admin va al dashboard.
-        router.push(isAdmin ? "/admin/orders" : "/");
+      if (!userRole || !allowedRoles.includes(userRole as any)) {
+        router.push(isStaff ? "/admin/orders" : "/");
       }
     }
-  }, [isAuthenticated, isAdmin, user, allowedRoles, router, isAuthStatusKnown]);
+  }, [isAuthenticated, isStaff, user, allowedRoles, router, isAuthStatusKnown]);
 
   // Mientras se verifica el estado, mostramos un cargando
-  if (!isAuthStatusKnown || !isAuthenticated || (user && (!user.rol.nombre || !allowedRoles.includes(user.rol.nombre)))) {
+  if (!isAuthStatusKnown || !isAuthenticated || (user && (!user.rol.nombre || !allowedRoles.includes(user.rol.nombre as any)))) {
     return (
         <div className="container mx-auto px-4 py-8 space-y-4">
             <Skeleton className="h-12 w-1/4" />

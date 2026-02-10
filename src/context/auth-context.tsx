@@ -14,6 +14,7 @@ interface AuthContextType {
   register: (userData: Omit<User, 'rol' | 'estado'> & { contrasena: string }) => Promise<boolean>;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  isVendedor: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -23,17 +24,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useLocalStorage<string | null>('access_token', null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isVendedor, setIsVendedor] = useState(false);
   const router = useRouter();
 
-  // Detectamos el rol cada vez que el usuario cambia o se carga la app
   useEffect(() => {
     if (user && token) {
       setIsAuthenticated(true);
-      // Aquí se diferencia el rol para toda la aplicación
       setIsAdmin(user.rol.nombre === 'ADMINISTRADOR');
+      setIsVendedor(user.rol.nombre === 'VENDEDOR');
     } else {
       setIsAuthenticated(false);
       setIsAdmin(false);
+      setIsVendedor(false);
     }
   }, [user, token]);
 
@@ -76,8 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setToken(access_token);
         setUser(apiUser);
         
-        // Redirección inmediata basada en el rol recibido
-        if (apiUser.rol.nombre === 'ADMINISTRADOR') {
+        if (apiUser.rol.nombre === 'ADMINISTRADOR' || apiUser.rol.nombre === 'VENDEDOR') {
           router.push('/admin/orders');
         } else {
           router.push('/');
@@ -140,7 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const value = { user, login, logout, register, isAuthenticated, isAdmin };
+  const value = { user, login, logout, register, isAuthenticated, isAdmin, isVendedor };
 
   return (
     <AuthContext.Provider value={value}>

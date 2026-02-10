@@ -1,3 +1,4 @@
+
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
@@ -35,6 +36,10 @@ const nextConfig: NextConfig = {
       {
         source: '/graphql',
         destination: 'https://foodapp-g0jx.onrender.com/graphql',
+      },
+      {
+        source: '/api/:path*',
+        destination: 'https://foodapp-g0jx.onrender.com/api/:path*',
       },
     ]
   },

@@ -1,7 +1,7 @@
 
 export interface Role {
   id: number;
-  nombre: 'CLIENTE' | 'ADMINISTRADOR';
+  nombre: 'CLIENTE' | 'ADMINISTRADOR' | 'VENDEDOR';
   estado?: 'ACTIVO' | 'INACTIVO';
 }
 
@@ -59,4 +59,16 @@ export interface OrderDetail {
 export interface CartItem extends Dish {
   quantity: number;
   notasAdicionales?: string;
+}
+
+export interface Invoice {
+  id: number;
+  pedidoId: number;
+  codigoFactura: string;
+  fechaEmision: string;
+  clienteNombre: string;
+  clienteCedula: string;
+  subtotal: number;
+  iva: number;
+  total: number;
 }
