@@ -9,7 +9,6 @@ import { Printer, ArrowLeft, Loader2 } from "lucide-react";
 import { Invoice } from "@/lib/types";
 import { formatCurrency } from "@/lib/calculations";
 import { useToast } from "@/hooks/use-toast";
-import { Separator } from "@/components/ui/separator";
 
 export default function AdminInvoicePrintPage() {
   const params = useParams();
@@ -63,152 +62,172 @@ export default function AdminInvoicePrintPage() {
 
   return (
     <div className="min-h-screen bg-gray-100 print:bg-white">
-      {/* Barra de herramientas de vista previa - NO SE IMPRIME */}
-      <div className="sticky top-0 z-50 w-full bg-white border-b px-4 py-3 print:hidden shadow-sm">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <Button variant="outline" size="sm" onClick={() => router.back()}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Regresar
-          </Button>
-          <div className="flex items-center gap-4">
-            <span className="text-sm font-medium text-gray-500">Vista de Impresión Oficial</span>
-            <Button onClick={handlePrint} size="sm">
-              <Printer className="mr-2 h-4 w-4" />
-              Imprimir ahora
+      {/* 1. INTERFAZ DE VISTA PREVIA (SOLO PANTALLA) */}
+      <div className="print:hidden">
+        <div className="sticky top-0 z-50 w-full bg-white border-b px-4 py-3 shadow-sm">
+          <div className="max-w-4xl mx-auto flex items-center justify-between">
+            <Button variant="outline" size="sm" onClick={() => router.back()}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Regresar
             </Button>
+            <div className="flex items-center gap-4">
+              <span className="text-sm font-medium text-gray-500">Vista Previa Profesional</span>
+              <Button onClick={handlePrint} size="sm">
+                <Printer className="mr-2 h-4 w-4" />
+                Imprimir ahora
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-4xl mx-auto p-8">
+          <div className="bg-white p-12 shadow-xl border rounded-lg">
+            <div className="flex justify-between items-start mb-10">
+              <div>
+                <h1 className="text-4xl font-black text-primary mb-1">PEDIDO LISTO</h1>
+                <p className="text-sm font-bold tracking-widest text-gray-400">RUC: 1005299489001</p>
+              </div>
+              <div className="text-right border-l-4 border-primary pl-6">
+                <p className="text-lg font-bold text-gray-500 uppercase">Factura de Venta</p>
+                <p className="text-3xl font-mono font-bold">{invoice.numeroFactura}</p>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-8 mb-10 bg-muted/30 p-6 rounded-lg">
+              <div className="space-y-1">
+                <p className="text-xs font-bold text-muted-foreground uppercase">Cliente</p>
+                <p className="font-bold text-lg">{invoice.usuario.nombre} {invoice.usuario.apellido}</p>
+                <p className="text-sm">CI: {invoice.usuarioCedula}</p>
+              </div>
+              <div className="text-right space-y-1">
+                <p className="text-xs font-bold text-muted-foreground uppercase">Emisión</p>
+                <p className="font-bold">{new Date(invoice.fechaFactura).toLocaleDateString()}</p>
+                <p className="text-sm">{invoice.tipoFactura} | {invoice.estadoFactura}</p>
+              </div>
+            </div>
+
+            <table className="w-full mb-10">
+              <thead>
+                <tr className="border-b-2 border-primary text-left">
+                  <th className="py-2">Cant.</th>
+                  <th className="py-2">Descripción</th>
+                  <th className="py-2 text-right">Precio</th>
+                  <th className="py-2 text-right">Total</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {invoice.detalles.map((det) => (
+                  <tr key={det.id}>
+                    <td className="py-4">{det.cantidad}</td>
+                    <td className="py-4 font-medium">{det.platillo?.nombreItem || det.descripcionItem}</td>
+                    <td className="py-4 text-right">{formatCurrency(Number(det.precioUnitario))}</td>
+                    <td className="py-4 text-right font-bold">{formatCurrency(Number(det.subtotal))}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <div className="flex justify-end">
+              <div className="w-64 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Subtotal:</span>
+                  <span>{formatCurrency(Number(invoice.montoSubtotal))}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>IVA (12%):</span>
+                  <span>{formatCurrency(Number(invoice.montoIva))}</span>
+                </div>
+                <div className="flex justify-between text-2xl font-black border-t-2 pt-2 text-primary">
+                  <span>TOTAL:</span>
+                  <span>{formatCurrency(Number(invoice.montoTotal))}</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Formato de Factura Profesional */}
-      <div className="max-w-4xl mx-auto p-8 print:p-0">
-        <div id="printable-document" className="bg-white p-12 shadow-sm border print:shadow-none print:border-none print:p-0">
-          
-          {/* Encabezado */}
-          <div className="flex justify-between items-start mb-10">
-            <div>
-              <h1 className="text-4xl font-black text-black mb-1">PEDIDO LISTO</h1>
-              <p className="text-sm font-bold tracking-widest text-gray-500">RUC: 1005299489001</p>
-              <p className="text-xs text-gray-500 max-w-xs">Matriz: Av. Principal y 10 de Agosto, Ibarra, Ecuador. Tel: (06) 2645-123</p>
-            </div>
-            <div className="text-right border-2 border-black p-4 min-w-[250px]">
-              <p className="text-lg font-bold">FACTURA</p>
-              <p className="text-2xl font-mono font-bold text-primary">{invoice.numeroFactura}</p>
-              <p className="text-xs mt-2">FECHA DE EMISIÓN</p>
-              <p className="font-medium">{new Date(invoice.fechaFactura).toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
-            </div>
-          </div>
-
-          {/* Información del Cliente */}
-          <div className="grid grid-cols-2 gap-8 mb-10 text-sm">
-            <div className="space-y-2">
-              <p className="border-b border-black font-bold text-[10px] pb-1 uppercase">DATOS DEL CLIENTE</p>
-              <p><span className="font-bold">SEÑOR(ES):</span> {invoice.usuario.nombre} {invoice.usuario.apellido}</p>
-              <p><span className="font-bold">C.I. / RUC:</span> {invoice.usuarioCedula}</p>
-              <p><span className="font-bold">DIRECCIÓN:</span> {invoice.usuario.direccionPrincipal}</p>
-            </div>
-            <div className="space-y-2">
-              <p className="border-b border-black font-bold text-[10px] pb-1 uppercase">DETALLES ADICIONALES</p>
-              <p><span className="font-bold">TIPO:</span> {invoice.tipoFactura}</p>
-              <p><span className="font-bold">ESTADO:</span> {invoice.estadoFactura}</p>
-              <p><span className="font-bold">TELÉFONO:</span> {invoice.usuario.telefono}</p>
-            </div>
-          </div>
-
-          {/* Tabla de Productos */}
-          <div className="mb-10">
-            <table className="w-full text-sm border-collapse border border-black">
-              <thead>
-                <tr className="bg-gray-100 print:bg-gray-100 border-b border-black">
-                  <th className="border-r border-black p-2 text-center w-20">CANT.</th>
-                  <th className="border-r border-black p-2 text-left">DESCRIPCIÓN</th>
-                  <th className="border-r border-black p-2 text-right w-32">P. UNITARIO</th>
-                  <th className="p-2 text-right w-32">SUBTOTAL</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-300">
-                {invoice.detalles.map((det) => (
-                  <tr key={det.id} className="border-b border-gray-300">
-                    <td className="border-r border-black p-2 text-center">{det.cantidad}</td>
-                    <td className="border-r border-black p-2">
-                      <span className="font-bold">{det.platillo?.nombreItem || det.descripcionItem}</span>
-                      {det.platillo?.categoriaNombre && <span className="text-[10px] text-gray-500 block">{det.platillo.categoriaNombre}</span>}
-                    </td>
-                    <td className="border-r border-black p-2 text-right">{formatCurrency(Number(det.precioUnitario))}</td>
-                    <td className="p-2 text-right font-medium">{formatCurrency(Number(det.subtotal))}</td>
-                  </tr>
-                ))}
-                {/* Filas vacías para rellenar el formato si hay pocos ítems */}
-                {invoice.detalles.length < 5 && Array.from({ length: 5 - invoice.detalles.length }).map((_, i) => (
-                   <tr key={`empty-${i}`} className="border-b border-gray-200 h-8">
-                     <td className="border-r border-black"></td>
-                     <td className="border-r border-black"></td>
-                     <td className="border-r border-black"></td>
-                     <td></td>
-                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Totales y Firmas */}
-          <div className="flex justify-between items-start">
-            <div className="w-1/2 mt-10">
-               <div className="border-t border-black w-48 text-center pt-2">
-                 <p className="text-[10px] font-bold">FIRMA AUTORIZADA</p>
-               </div>
-               <p className="text-[9px] text-gray-400 mt-10">Original: Cliente | Copia: Emisor</p>
-            </div>
-            <div className="w-[280px]">
-              <table className="w-full text-sm border border-black border-t-0">
-                <tbody>
-                  <tr>
-                    <td className="border-r border-black p-2 font-bold bg-gray-50">SUBTOTAL</td>
-                    <td className="p-2 text-right">{formatCurrency(Number(invoice.montoSubtotal))}</td>
-                  </tr>
-                  <tr>
-                    <td className="border-r border-black p-2 font-bold bg-gray-50">IVA 12%</td>
-                    <td className="p-2 text-right">{formatCurrency(Number(invoice.montoIva))}</td>
-                  </tr>
-                  <tr className="border-t border-black bg-gray-100">
-                    <td className="border-r border-black p-2 font-black text-lg">TOTAL</td>
-                    <td className="p-2 text-right font-black text-xl">{formatCurrency(Number(invoice.montoTotal))}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div className="mt-20 text-center text-[10px] text-gray-500 border-t pt-4 border-dashed border-gray-300">
-            <p>GRACIAS POR SU PREFERENCIA - PEDIDO LISTO ES CALIDAD Y SABOR</p>
-            <p className="mt-1">Documento generado electrónicamente | Sistema de Gestión Pedido Listo v1.0</p>
-          </div>
-
+      {/* 2. FORMATO DE IMPRESIÓN (SOLO IMPRESORA - DOCUMENTO SIMPLE) */}
+      <div className="hidden print:block p-0 m-0 text-black bg-white">
+        <div className="border-b-2 border-black pb-4 mb-6">
+          <h1 className="text-2xl font-bold">PEDIDO LISTO</h1>
+          <p className="text-sm">RUC: 1005299489001 | Tel: (06) 2645-123</p>
+          <p className="text-sm">Dirección: Av. Principal y 10 de Agosto, Ibarra, Ecuador</p>
         </div>
+
+        <div className="flex justify-between mb-8">
+          <div className="text-sm space-y-1">
+            <p><strong>CLIENTE:</strong> {invoice.usuario.nombre} {invoice.usuario.apellido}</p>
+            <p><strong>CI/RUC:</strong> {invoice.usuarioCedula}</p>
+            <p><strong>DIRECCIÓN:</strong> {invoice.usuario.direccionPrincipal}</p>
+          </div>
+          <div className="text-right text-sm space-y-1">
+            <p className="text-lg font-bold">FACTURA: {invoice.numeroFactura}</p>
+            <p><strong>FECHA:</strong> {new Date(invoice.fechaFactura).toLocaleString()}</p>
+            <p><strong>TIPO:</strong> {invoice.tipoFactura}</p>
+          </div>
+        </div>
+
+        <table className="w-full text-sm border-collapse mb-8">
+          <thead>
+            <tr className="border-y border-black">
+              <th className="py-2 text-left">CANT.</th>
+              <th className="py-2 text-left">DESCRIPCIÓN</th>
+              <th className="py-2 text-right">P. UNIT</th>
+              <th className="py-2 text-right">SUBTOTAL</th>
+            </tr>
+          </thead>
+          <tbody>
+            {invoice.detalles.map((det) => (
+              <tr key={det.id} className="border-b border-gray-200">
+                <td className="py-2">{det.cantidad}</td>
+                <td className="py-2">{det.platillo?.nombreItem || det.descripcionItem}</td>
+                <td className="py-2 text-right">{formatCurrency(Number(det.precioUnitario))}</td>
+                <td className="py-2 text-right">{formatCurrency(Number(det.subtotal))}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <div className="flex justify-end">
+          <div className="w-48 text-sm space-y-1">
+            <div className="flex justify-between">
+              <span>SUBTOTAL:</span>
+              <span>{formatCurrency(Number(invoice.montoSubtotal))}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>IVA 12%:</span>
+              <span>{formatCurrency(Number(invoice.montoIva))}</span>
+            </div>
+            <div className="flex justify-between font-bold text-lg border-t border-black pt-1">
+              <span>TOTAL:</span>
+              <span>{formatCurrency(Number(invoice.montoTotal))}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-20 flex justify-around">
+          <div className="border-t border-black w-40 text-center pt-1 text-xs font-bold">FIRMA AUTORIZADA</div>
+          <div className="border-t border-black w-40 text-center pt-1 text-xs font-bold">RECIBÍ CONFORME</div>
+        </div>
+        
+        <p className="mt-10 text-center text-[10px] text-gray-400">Documento sin valor tributario - Solo uso informativo interno</p>
       </div>
 
       <style jsx global>{`
         @media print {
           @page {
-            margin: 0;
+            margin: 1.5cm;
             size: A4;
           }
           body {
-            background-color: white !important;
-            margin: 0;
-            padding: 0;
+            background: white !important;
           }
           .print\:hidden {
             display: none !important;
           }
-          #printable-document {
-            width: 100% !important;
-            border: none !important;
-            padding: 1.5cm !important;
-          }
-          * {
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
+          .hidden.print\:block {
+            display: block !important;
           }
         }
       `}</style>
