@@ -31,7 +31,6 @@ export default function AdminInvoicePrintPage() {
         
         if (found) {
           setInvoice(found);
-          // Establecer el título del documento para que el nombre del PDF sea el número de factura
           document.title = found.numeroFactura;
         } else {
           toast({ variant: "destructive", title: "Error", description: "No se encontró la factura." });
@@ -149,8 +148,8 @@ export default function AdminInvoicePrintPage() {
         </div>
       </div>
 
-      {/* 2. FORMATO DE IMPRESIÓN (SOLO IMPRESORA - DOCUMENTO SIMPLE) */}
-      <div className="hidden print:block p-0 m-0 text-black bg-white w-full">
+      {/* 2. FORMATO DE IMPRESIÓN (SIN ENCABEZADOS DE NAVEGADOR) */}
+      <div className="hidden print:block p-8 m-0 text-black bg-white w-full">
         <div className="border-b-2 border-black pb-4 mb-6">
           <h1 className="text-2xl font-bold">PEDIDO LISTO</h1>
           <p className="text-sm">RUC: 1005299489001 | Tel: (06) 2645-123</p>
@@ -207,20 +206,19 @@ export default function AdminInvoicePrintPage() {
             </div>
           </div>
         </div>
-        
-        <p className="mt-10 text-center text-[10px] text-gray-400 italic">Documento generado electrónicamente - Pedido Listo ©</p>
       </div>
 
       <style jsx global>{`
         @media print {
           @page {
-            margin: 1cm;
-            size: A4;
+            margin: 0;
+            size: auto;
           }
           html, body {
             height: auto !important;
             overflow: visible !important;
             background: white !important;
+            margin: 0 !important;
           }
           .print\:hidden {
             display: none !important;
@@ -228,11 +226,8 @@ export default function AdminInvoicePrintPage() {
           .hidden.print\:block {
             display: block !important;
           }
-          /* Asegurar que el contenido principal ocupe todo el ancho al ocultar sidebar y header */
-          div[class*="flex-1"], main {
-            padding: 0 !important;
-            margin: 0 !important;
-            width: 100% !important;
+          header, nav, aside {
+            display: none !important;
           }
         }
       `}</style>

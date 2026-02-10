@@ -32,7 +32,6 @@ export default function ClientInvoicePrintPage() {
         
         if (found) {
           setInvoice(found);
-          // Establecer el título del documento para que el nombre del PDF sea el número de factura
           document.title = found.numeroFactura;
         } else {
           toast({ variant: "destructive", title: "Error", description: "No se encontró la factura." });
@@ -153,8 +152,8 @@ export default function ClientInvoicePrintPage() {
           </div>
         </div>
 
-        {/* 2. FORMATO DE DOCUMENTO SIMPLE (SOLO IMPRESIÓN) */}
-        <div className="hidden print:block text-black text-sm p-0 m-0 w-full bg-white">
+        {/* 2. FORMATO DE DOCUMENTO SIMPLE (SIN ENCABEZADOS DE NAVEGADOR) */}
+        <div className="hidden print:block text-black text-sm p-8 m-0 w-full bg-white">
            <div className="border-b border-black pb-4 mb-6">
               <h1 className="text-xl font-bold">PEDIDO LISTO - COMPROBANTE DE COMPRA</h1>
               <p>Ibarra, Ecuador | Documento Digital</p>
@@ -206,23 +205,19 @@ export default function ClientInvoicePrintPage() {
                  </div>
               </div>
            </div>
-
-           <div className="mt-20 text-center text-[10px]">
-              <p>¡Gracias por su preferencia!</p>
-              <p>Este documento es un registro de su compra realizada a través de nuestra plataforma web.</p>
-           </div>
         </div>
 
         <style jsx global>{`
           @media print {
             @page {
-              margin: 1cm;
+              margin: 0;
               size: auto;
             }
             html, body {
               height: auto !important;
               overflow: visible !important;
               background-color: white !important;
+              margin: 0 !important;
             }
             .print\:hidden {
               display: none !important;
@@ -230,14 +225,8 @@ export default function ClientInvoicePrintPage() {
             .hidden.print\:block {
               display: block !important;
             }
-            /* Ocultar elementos de layout global */
             header, nav, aside {
               display: none !important;
-            }
-            main {
-              width: 100% !important;
-              padding: 0 !important;
-              margin: 0 !important;
             }
           }
         `}</style>
