@@ -2,7 +2,7 @@
 "use client";
 
 import Link from 'next/link';
-import { LogIn, UserPlus, LogOut, Shield, History } from 'lucide-react';
+import { LogIn, UserPlus, LogOut, Shield, History, FileText } from 'lucide-react';
 
 import { useAuth } from '@/context/auth-context';
 import { Button } from '@/components/ui/button';
@@ -54,7 +54,7 @@ export default function Header() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  {isAdmin || !isCliente ? (
+                  {isAdmin || (user.rol.nombre === 'VENDEDOR') ? (
                      <DropdownMenuItem asChild>
                         <Link href="/admin/orders">
                           <Shield className="mr-2 h-4 w-4" />
@@ -62,12 +62,20 @@ export default function Header() {
                         </Link>
                       </DropdownMenuItem>
                   ) : (
-                    <DropdownMenuItem asChild>
-                      <Link href="/orders">
-                        <History className="mr-2 h-4 w-4" />
-                        <span>Mis Pedidos</span>
-                      </Link>
-                    </DropdownMenuItem>
+                    <>
+                      <DropdownMenuItem asChild>
+                        <Link href="/orders">
+                          <History className="mr-2 h-4 w-4" />
+                          <span>Mis Pedidos</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/invoices">
+                          <FileText className="mr-2 h-4 w-4" />
+                          <span>Mis Facturas</span>
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
                   )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={logout}>
