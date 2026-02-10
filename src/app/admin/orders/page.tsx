@@ -33,6 +33,7 @@ import type { Order, OrderDetail } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
+import { useAuth } from '@/context/auth-context';
 
 const GET_PEDIDOS_QUERY = `
   query {
@@ -94,6 +95,7 @@ export default function AdminOrdersPage() {
   const [filter, setFilter] = useState('');
   const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'ascending' | 'descending' } | null>({ key: 'fechaPedido', direction: 'descending' });
   const { toast } = useToast();
+  const { isAdmin } = useAuth();
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -153,6 +155,9 @@ export default function AdminOrdersPage() {
 
   const handleStatusChange = async (orderId: number, newStatus: Order['estadoPedido']) => {
     try {
+        const token = window.localStorage.getItem('access_token');
+        const cleanToken = token ? JSON.parse(token) : null;
+
         await axios.post('/graphql', {
             query: UPDATE_PEDIDO_MUTATION,
             variables: {
@@ -161,6 +166,10 @@ export default function AdminOrdersPage() {
                     estadoPedido: newStatus
                 }
             }
+        }, {
+            headers: {
+                Authorization: `Bearer ${cleanToken}`
+            }
         });
 
         const updatedOrders = orders.map(order =>
@@ -168,16 +177,23 @@ export default function AdminOrdersPage() {
         );
         setOrders(updatedOrders);
 
-        toast({
-            title: "Estado Actualizado",
-            description: `El pedido #${orderId} ha sido actualizado a "${newStatus}".`
-        });
+        if (newStatus === 'Autorizado') {
+            toast({
+                title: "Factura por pedido creada con éxito",
+                description: `El pedido #${orderId} ha sido autorizado y facturado.`
+            });
+        } else {
+            toast({
+                title: "Estado Actualizado",
+                description: `El pedido #${orderId} ha sido actualizado a "${newStatus}".`
+            });
+        }
     } catch (error) {
         console.error("Error updating order status:", error);
         toast({
             variant: "destructive",
             title: "Error al actualizar",
-            description: "No se pudo cambiar el estado del pedido."
+            description: "No se pudo cambiar el estado del pedido o generar la factura."
         });
     }
   };
@@ -240,7 +256,7 @@ export default function AdminOrdersPage() {
                         onValueChange={(value: Order['estadoPedido']) =>
                           handleStatusChange(order.id, value)
                         }
-                        disabled={order.estadoPedido === 'Entregado' || order.estadoPedido === 'Cancelado'}
+                        disabled={!isAdmin || order.estadoPedido === 'Entregado' || order.estadoPedido === 'Cancelado'}
                       >
                         <SelectTrigger className="w-[150px]">
                           <SelectValue placeholder="Cambiar estado" />
@@ -250,6 +266,7 @@ export default function AdminOrdersPage() {
                           <SelectItem value="Autorizado">Autorizado</SelectItem>
                         </SelectContent>
                       </Select>
+                      {!isAdmin && <p className="text-[10px] text-muted-foreground mt-1">Solo admin puede cambiar</p>}
                     </TableCell>
                     <TableCell className="text-right">
                           <DialogTrigger asChild>
