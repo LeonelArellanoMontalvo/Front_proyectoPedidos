@@ -155,8 +155,8 @@ export default function AdminOrdersPage() {
 
   const handleStatusChange = async (orderId: number, newStatus: Order['estadoPedido']) => {
     try {
-        const token = window.localStorage.getItem('access_token');
-        const cleanToken = token ? JSON.parse(token) : null;
+        const tokenString = window.localStorage.getItem('access_token');
+        const token = tokenString ? JSON.parse(tokenString) : null;
 
         await axios.post('/graphql', {
             query: UPDATE_PEDIDO_MUTATION,
@@ -168,7 +168,7 @@ export default function AdminOrdersPage() {
             }
         }, {
             headers: {
-                Authorization: `Bearer ${cleanToken}`
+                Authorization: `Bearer ${token}`
             }
         });
 
@@ -241,42 +241,47 @@ export default function AdminOrdersPage() {
                           Cargando pedidos...
                       </TableCell>
                   </TableRow>
-                ) : sortedAndFilteredOrders.map((order) => (
-                  <TableRow key={order.id}>
-                    <TableCell className="font-medium">#{order.id}</TableCell>
-                    <TableCell>{order.usuario?.nombre || order.usuarioCedula}</TableCell>
-                    <TableCell>{new Date(order.fechaPedido).toLocaleDateString()}</TableCell>
-                    <TableCell>${order.montoTotal.toFixed(2)}</TableCell>
-                    <TableCell>
-                      <Badge variant={getStatusVariant(order.estadoPedido)}>{order.estadoPedido}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Select
-                        value={order.estadoPedido}
-                        onValueChange={(value: Order['estadoPedido']) =>
-                          handleStatusChange(order.id, value)
-                        }
-                        disabled={!isAdmin || order.estadoPedido === 'Entregado' || order.estadoPedido === 'Cancelado'}
-                      >
-                        <SelectTrigger className="w-[150px]">
-                          <SelectValue placeholder="Cambiar estado" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Pendiente">Pendiente</SelectItem>
-                          <SelectItem value="Autorizado">Autorizado</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {!isAdmin && <p className="text-[10px] text-muted-foreground mt-1">Solo admin puede cambiar</p>}
-                    </TableCell>
-                    <TableCell className="text-right">
-                          <DialogTrigger asChild>
-                              <Button variant="outline" size="icon" onClick={() => setSelectedOrder(order)}>
-                                  <Eye className="h-4 w-4" />
-                              </Button>
-                          </DialogTrigger>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                ) : sortedAndFilteredOrders.map((order) => {
+                  const isLocked = order.estadoPedido === 'Autorizado' || order.estadoPedido === 'Entregado' || order.estadoPedido === 'Cancelado';
+                  
+                  return (
+                    <TableRow key={order.id}>
+                      <TableCell className="font-medium">#{order.id}</TableCell>
+                      <TableCell>{order.usuario?.nombre || order.usuarioCedula}</TableCell>
+                      <TableCell>{new Date(order.fechaPedido).toLocaleDateString()}</TableCell>
+                      <TableCell>${order.montoTotal.toFixed(2)}</TableCell>
+                      <TableCell>
+                        <Badge variant={getStatusVariant(order.estadoPedido)}>{order.estadoPedido}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Select
+                          value={order.estadoPedido}
+                          onValueChange={(value: Order['estadoPedido']) =>
+                            handleStatusChange(order.id, value)
+                          }
+                          disabled={!isAdmin || isLocked}
+                        >
+                          <SelectTrigger className="w-[150px]">
+                            <SelectValue placeholder="Cambiar estado" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Pendiente">Pendiente</SelectItem>
+                            <SelectItem value="Autorizado">Autorizado</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {isLocked && <p className="text-[10px] text-muted-foreground mt-1">Estado bloqueado tras autorización</p>}
+                        {!isAdmin && !isLocked && <p className="text-[10px] text-muted-foreground mt-1">Solo admin puede cambiar</p>}
+                      </TableCell>
+                      <TableCell className="text-right">
+                            <DialogTrigger asChild>
+                                <Button variant="outline" size="icon" onClick={() => setSelectedOrder(order)}>
+                                    <Eye className="h-4 w-4" />
+                                </Button>
+                            </DialogTrigger>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </CardContent>
