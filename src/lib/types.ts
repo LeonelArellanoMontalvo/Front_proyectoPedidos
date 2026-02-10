@@ -12,7 +12,7 @@ export interface User {
   apellido: string;
   telefono: string;
   email: string;
-  direccionPrincipal: string; // Corresponds to direccion_principal
+  direccionPrincipal: string;
   estado?: 'ACTIVO' | 'INACTIVO';
 }
 
@@ -63,12 +63,27 @@ export interface CartItem extends Dish {
 
 export interface Invoice {
   id: number;
-  pedidoId: number;
-  codigoFactura: string;
-  fechaEmision: string;
-  clienteNombre: string;
-  clienteCedula: string;
-  subtotal: number;
-  iva: number;
-  total: number;
+  usuarioCedula: string;
+  pedidoId: number | null;
+  numeroFactura: string;
+  fechaFactura: string;
+  montoSubtotal: string | number;
+  montoIva: string | number;
+  montoTotal: string | number;
+  estadoFactura: string;
+  tipoFactura: string;
+  descripcion: string;
+  usuario: User;
+  detalles: InvoiceDetail[];
+}
+
+export interface InvoiceDetail {
+  id: number;
+  facturaId: number;
+  itemId: number;
+  cantidad: number;
+  precioUnitario: string | number;
+  subtotal: string | number;
+  descripcionItem: string | null;
+  platillo: Dish;
 }

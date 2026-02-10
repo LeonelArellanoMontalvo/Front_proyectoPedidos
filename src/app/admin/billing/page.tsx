@@ -12,12 +12,20 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ReceiptText, Search, FileDown } from 'lucide-react';
+import { ReceiptText, Search, Eye, FileText } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Separator } from "@/components/ui/separator";
 import { Invoice } from "@/lib/types";
 import { formatCurrency } from "@/lib/calculations";
 
@@ -25,22 +33,29 @@ export default function BillingPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     const fetchInvoices = async () => {
       setLoading(true);
       try {
-        // Consumiendo la API REST configurada en next.config.ts rewrites
-        const response = await axios.get("/api/facturacion");
-        // Nota: Asegúrate de que el backend devuelva un array de facturas
+        const token = window.localStorage.getItem('access_token');
+        const cleanToken = token ? JSON.parse(token) : null;
+
+        const response = await axios.get("/api/facturacion", {
+          headers: {
+            Authorization: `Bearer ${cleanToken}`
+          }
+        });
+        
         setInvoices(Array.isArray(response.data) ? response.data : []);
-      } catch (err) {
+      } catch (err: any) {
         console.error("Error cargando facturas:", err);
         toast({
           variant: "destructive",
           title: "Error al cargar facturas",
-          description: "No se pudieron obtener los datos de la API REST.",
+          description: err.response?.data?.message || "No se pudo conectar con la API REST.",
         });
       } finally {
         setLoading(false);
@@ -50,9 +65,9 @@ export default function BillingPage() {
   }, [toast]);
 
   const filteredInvoices = invoices.filter(inv => 
-    inv.codigoFactura.toLowerCase().includes(filter.toLowerCase()) ||
-    inv.clienteNombre.toLowerCase().includes(filter.toLowerCase()) ||
-    inv.clienteCedula.includes(filter)
+    inv.numeroFactura.toLowerCase().includes(filter.toLowerCase()) ||
+    `${inv.usuario.nombre} ${inv.usuario.apellido}`.toLowerCase().includes(filter.toLowerCase()) ||
+    inv.usuarioCedula.includes(filter)
   );
 
   return (
@@ -61,7 +76,7 @@ export default function BillingPage() {
         <ReceiptText className="h-10 w-10 text-primary" />
         <div>
           <h1 className="font-headline text-4xl font-bold">Módulo de Facturación</h1>
-          <p className="text-muted-foreground">Gestión y consulta de facturas generadas vía API REST.</p>
+          <p className="text-muted-foreground">Consulta y gestión de comprobantes electrónicos generados.</p>
         </div>
       </div>
       
@@ -72,69 +87,127 @@ export default function BillingPage() {
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input 
-                placeholder="Buscar por código, nombre o cédula..." 
+                placeholder="Buscar por número, cliente o cédula..." 
                 value={filter}
                 onChange={(e) => setFilter(e.target.value)}
                 className="pl-9"
               />
             </div>
-            <Button variant="outline">
-              <FileDown className="mr-2 h-4 w-4" />
-              Exportar Todo
-            </Button>
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Código</TableHead>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Cédula</TableHead>
-                <TableHead>Fecha</TableHead>
-                <TableHead className="text-right">Subtotal</TableHead>
-                <TableHead className="text-right">IVA</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-                <TableHead className="text-center">Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                 Array.from({ length: 5 }).map((_, index) => (
+          <Dialog>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Número de Factura</TableHead>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead className="text-center">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  Array.from({ length: 5 }).map((_, index) => (
                     <TableRow key={index}>
-                        <TableCell colSpan={8}>
-                            <Skeleton className="h-8 w-full" />
-                        </TableCell>
+                      <TableCell colSpan={6}><Skeleton className="h-8 w-full" /></TableCell>
                     </TableRow>
-                 ))
-              ) : filteredInvoices.length > 0 ? (
-                filteredInvoices.map((inv) => (
-                  <TableRow key={inv.id}>
-                    <TableCell className="font-mono font-bold text-primary">{inv.codigoFactura}</TableCell>
-                    <TableCell>{inv.clienteNombre}</TableCell>
-                    <TableCell>{inv.clienteCedula}</TableCell>
-                    <TableCell>{new Date(inv.fechaEmision).toLocaleDateString()}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(inv.subtotal)}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(inv.iva)}</TableCell>
-                    <TableCell className="text-right font-bold">{formatCurrency(inv.total)}</TableCell>
-                    <TableCell className="text-center">
-                      <Button variant="ghost" size="sm">
-                        Ver PDF
-                      </Button>
+                  ))
+                ) : filteredInvoices.length > 0 ? (
+                  filteredInvoices.map((inv) => (
+                    <TableRow key={inv.id}>
+                      <TableCell className="font-mono font-bold text-primary">{inv.numeroFactura}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span>{inv.usuario.nombre} {inv.usuario.apellido}</span>
+                          <span className="text-xs text-muted-foreground">{inv.usuarioCedula}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>{new Date(inv.fechaFactura).toLocaleDateString()}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{inv.tipoFactura}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right font-bold">
+                        {formatCurrency(Number(inv.montoTotal))}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <DialogTrigger asChild>
+                          <Button variant="ghost" size="icon" onClick={() => setSelectedInvoice(inv)}>
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </DialogTrigger>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
+                      No se encontraron facturas.
                     </TableCell>
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
-                    No se encontraron facturas.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                )}
+              </TableBody>
+            </Table>
+
+            {selectedInvoice && (
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <FileText className="h-5 w-5" />
+                    Detalle de Factura {selectedInvoice.numeroFactura}
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="font-semibold text-muted-foreground">Cliente</p>
+                      <p>{selectedInvoice.usuario.nombre} {selectedInvoice.usuario.apellido}</p>
+                      <p className="text-xs">{selectedInvoice.usuario.email}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold text-muted-foreground">Fecha Emisión</p>
+                      <p>{new Date(selectedInvoice.fechaFactura).toLocaleString()}</p>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <div>
+                    <p className="font-semibold mb-3">Ítems</p>
+                    <div className="space-y-2">
+                      {selectedInvoice.detalles.map((det) => (
+                        <div key={det.id} className="flex justify-between text-sm">
+                          <span>{det.cantidad}x {det.platillo?.nombreItem || det.descripcionItem}</span>
+                          <span>{formatCurrency(Number(det.subtotal))}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Subtotal</span>
+                      <span>{formatCurrency(Number(selectedInvoice.montoSubtotal))}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">IVA (15%)</span>
+                      <span>{formatCurrency(Number(selectedInvoice.montoIva))}</span>
+                    </div>
+                    <div className="flex justify-between font-bold text-lg pt-2">
+                      <span>Total</span>
+                      <span className="text-primary">{formatCurrency(Number(selectedInvoice.montoTotal))}</span>
+                    </div>
+                  </div>
+                </div>
+              </DialogContent>
+            )}
+          </Dialog>
         </CardContent>
       </Card>
     </div>
   );
-};
+}
