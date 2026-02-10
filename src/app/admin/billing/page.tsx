@@ -3,6 +3,7 @@
 
 import React, { useEffect, useState, useMemo } from "react";
 import axios from "axios";
+import Link from "next/link";
 import {
   Table,
   TableBody,
@@ -220,15 +221,11 @@ export default function BillingPage() {
     }
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
-
   const selectedItemIds = invoiceDetails.map(d => d.itemId);
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between gap-4 print:hidden">
+      <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <ReceiptText className="h-10 w-10 text-primary" />
           <div>
@@ -394,8 +391,8 @@ export default function BillingPage() {
         )}
       </div>
       
-      <Card className="print:shadow-none print:border-none">
-        <CardHeader className="print:hidden">
+      <Card>
+        <CardHeader>
           <CardTitle>Historial de Facturas</CardTitle>
           <div className="flex items-center gap-4 pt-4">
             <div className="relative flex-1 max-w-sm">
@@ -429,7 +426,7 @@ export default function BillingPage() {
                       Fecha {getSortIcon('fechaFactura')}
                     </Button>
                   </TableHead>
-                  <TableHead className="print:hidden">
+                  <TableHead>
                     <Button variant="ghost" onClick={() => requestSort('tipoFactura')}>
                       Tipo {getSortIcon('tipoFactura')}
                     </Button>
@@ -439,7 +436,7 @@ export default function BillingPage() {
                       Total {getSortIcon('montoTotal')}
                     </Button>
                   </TableHead>
-                  <TableHead className="text-center print:hidden">Acciones</TableHead>
+                  <TableHead className="text-center">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -460,23 +457,22 @@ export default function BillingPage() {
                         </div>
                       </TableCell>
                       <TableCell>{new Date(inv.fechaFactura).toLocaleDateString()}</TableCell>
-                      <TableCell className="print:hidden">
+                      <TableCell>
                         <Badge variant="outline">{inv.tipoFactura}</Badge>
                       </TableCell>
                       <TableCell className="text-right font-bold">
                         {formatCurrency(Number(inv.montoTotal))}
                       </TableCell>
-                      <TableCell className="text-center space-x-2 print:hidden">
+                      <TableCell className="text-center space-x-2">
                         <DialogTrigger asChild>
                           <Button variant="ghost" size="icon" onClick={() => setSelectedInvoice(inv)}>
                             <Eye className="h-4 w-4" />
                           </Button>
                         </DialogTrigger>
-                        <Button variant="ghost" size="icon" onClick={() => {
-                          setSelectedInvoice(inv);
-                          setTimeout(handlePrint, 100);
-                        }}>
-                          <Printer className="h-4 w-4" />
+                        <Button variant="ghost" size="icon" asChild>
+                           <Link href={`/admin/billing/${inv.id}/print`}>
+                              <Printer className="h-4 w-4" />
+                           </Link>
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -492,16 +488,18 @@ export default function BillingPage() {
             </Table>
 
             {selectedInvoice && (
-              <DialogContent className="max-w-2xl print:max-w-none print:w-full print:fixed print:top-0 print:left-0 print:h-full print:bg-white print:z-[1000] print:m-0 print:p-8">
-                <DialogHeader className="print:mb-8">
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
                   <DialogTitle className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <FileText className="h-5 w-5" />
                         Detalle de Factura {selectedInvoice.numeroFactura}
                     </div>
-                    <Button variant="outline" size="sm" onClick={handlePrint} className="print:hidden">
-                        <Printer className="mr-2 h-4 w-4" />
-                        Imprimir
+                    <Button variant="outline" size="sm" asChild>
+                        <Link href={`/admin/billing/${selectedInvoice.id}/print`}>
+                           <Printer className="mr-2 h-4 w-4" />
+                           Imprimir
+                        </Link>
                     </Button>
                   </DialogTitle>
                 </DialogHeader>
@@ -554,37 +552,12 @@ export default function BillingPage() {
                       <span className="text-primary">{formatCurrency(Number(selectedInvoice.montoTotal))}</span>
                     </div>
                   </div>
-
-                  <div className="text-center text-[10px] text-muted-foreground mt-8 hidden print:block">
-                    <p>Gracias por su compra en Pedido Listo.</p>
-                    <p>Este es un comprobante electrónico generado automáticamente.</p>
-                  </div>
                 </div>
               </DialogContent>
             )}
           </Dialog>
         </CardContent>
       </Card>
-
-      <style jsx global>{`
-        @media print {
-          body * {
-            visibility: hidden;
-          }
-          #radix-\:rq\:, #radix-\:rq\: * {
-            visibility: visible;
-          }
-          .print\:hidden {
-            display: none !important;
-          }
-          .print\:shadow-none {
-            box-shadow: none !important;
-          }
-          .print\:border-none {
-            border: none !important;
-          }
-        }
-      `}</style>
     </div>
   );
 }

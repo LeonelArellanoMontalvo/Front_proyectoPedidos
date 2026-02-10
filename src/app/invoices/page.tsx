@@ -3,6 +3,7 @@
 
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import Link from "next/link";
 import {
   Table,
   TableBody,
@@ -61,10 +62,6 @@ export default function MyInvoicesPage() {
     fetchMyInvoices();
   }, [toast]);
 
-  const handlePrint = () => {
-    window.print();
-  };
-
   return (
     <ProtectedRoute allowedRoles={['CLIENTE']}>
       <div className="container mx-auto px-4 py-8 space-y-8">
@@ -112,11 +109,10 @@ export default function MyInvoicesPage() {
                               <Eye className="h-4 w-4" />
                             </Button>
                           </DialogTrigger>
-                          <Button variant="ghost" size="icon" onClick={() => {
-                            setSelectedInvoice(inv);
-                            setTimeout(handlePrint, 100);
-                          }}>
-                            <Printer className="h-4 w-4" />
+                          <Button variant="ghost" size="icon" asChild>
+                             <Link href={`/invoices/${inv.id}/print`}>
+                                <Printer className="h-4 w-4" />
+                             </Link>
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -132,21 +128,23 @@ export default function MyInvoicesPage() {
               </Table>
 
               {selectedInvoice && (
-                <DialogContent className="max-w-2xl print:max-w-none print:w-full print:fixed print:top-0 print:left-0 print:h-full print:bg-white print:z-[1000] print:m-0 print:p-8">
-                  <DialogHeader className="print:hidden">
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
                     <DialogTitle className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                           <FileText className="h-5 w-5" />
                           Detalle de Factura
                       </div>
-                      <Button variant="outline" size="sm" onClick={handlePrint}>
-                          <Printer className="mr-2 h-4 w-4" />
-                          Imprimir
+                      <Button variant="outline" size="sm" asChild>
+                          <Link href={`/invoices/${selectedInvoice.id}/print`}>
+                             <Printer className="mr-2 h-4 w-4" />
+                             Imprimir
+                          </Link>
                       </Button>
                     </DialogTitle>
                   </DialogHeader>
                   
-                  <div id="invoice-client-view" className="space-y-6">
+                  <div className="space-y-6">
                     <div className="flex justify-between items-start">
                         <div>
                             <h2 className="text-2xl font-bold text-primary">Pedido Listo</h2>
@@ -216,39 +214,12 @@ export default function MyInvoicesPage() {
                         </div>
                       </div>
                     </div>
-
-                    <div className="text-center text-[10px] text-muted-foreground mt-12 border-t pt-4">
-                      <p className="font-bold">¡Gracias por preferir Pedido Listo!</p>
-                      <p>Para consultas sobre este comprobante, por favor contáctenos a través de nuestro soporte.</p>
-                      <p className="mt-2 italic">Documento generado electrónicamente.</p>
-                    </div>
                   </div>
                 </DialogContent>
               )}
             </Dialog>
           </CardContent>
         </Card>
-
-        <style jsx global>{`
-          @media print {
-            body * {
-              visibility: hidden;
-            }
-            #invoice-client-view, #invoice-client-view * {
-              visibility: visible;
-            }
-            #invoice-client-view {
-              position: absolute;
-              left: 0;
-              top: 0;
-              width: 100%;
-              padding: 20px;
-            }
-            .print\:hidden {
-              display: none !important;
-            }
-          }
-        `}</style>
       </div>
     </ProtectedRoute>
   );
