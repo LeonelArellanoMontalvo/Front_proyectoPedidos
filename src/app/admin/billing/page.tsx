@@ -12,7 +12,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ReceiptText, Search, Eye, FileText, Printer, PlusCircle, Trash2, User as UserIcon } from 'lucide-react';
+import { ReceiptText, Search, Eye, FileText, Printer, PlusCircle, Trash2 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
@@ -33,38 +33,13 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '@/select';
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Invoice, User, Dish } from "@/lib/types";
 import { formatCurrency, calculateIVA, calculateTotal } from "@/lib/calculations";
-
-const GET_USUARIOS_QUERY = `
-  query {
-    usuarios {
-      cedula
-      nombre
-      apellido
-      email
-      telefono
-      direccionPrincipal
-      rol { nombre }
-    }
-  }
-`;
-
-const GET_PLATILLOS_QUERY = `
-  query {
-    platillos {
-      id
-      nombreItem
-      precio
-      disponible
-      estado
-    }
-  }
-`;
+import { useAuth } from "@/context/auth-context";
 
 interface InvoiceDetailForm {
   itemId: number;
@@ -73,6 +48,7 @@ interface InvoiceDetailForm {
 }
 
 export default function BillingPage() {
+  const { isVendedor } = useAuth();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [customers, setCustomers] = useState<User[]>([]);
   const [dishes, setDishes] = useState<Dish[]>([]);
@@ -188,7 +164,6 @@ export default function BillingPage() {
       setIsFormOpen(false);
       fetchInitialData();
       
-      // Reset form
       setSelectedCustomerCedula('');
       setInvoiceDetails([{ itemId: 0, cantidad: 1, precioUnitario: 0 }]);
       setInvoiceDescription('Venta directa');
@@ -220,159 +195,162 @@ export default function BillingPage() {
             <p className="text-muted-foreground">Consulta y gestión de comprobantes electrónicos generados.</p>
           </div>
         </div>
-        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Nueva Factura
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Crear Factura Directa (Venta)</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-6 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Seleccionar Cliente</Label>
-                  <Select value={selectedCustomerCedula} onValueChange={setSelectedCustomerCedula}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Buscar cliente..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {customers.map(c => (
-                        <SelectItem key={c.cedula} value={c.cedula}>
-                          {c.nombre} {c.apellido} ({c.cedula})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+        
+        {isVendedor && (
+          <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Nueva Factura
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Crear Factura Directa (Venta)</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-6 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Seleccionar Cliente</Label>
+                    <Select value={selectedCustomerCedula} onValueChange={setSelectedCustomerCedula}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Buscar cliente..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {customers.map(c => (
+                          <SelectItem key={c.cedula} value={c.cedula}>
+                            {c.nombre} {c.apellido} ({c.cedula})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Cédula / RUC</Label>
+                    <Input value={selectedCustomerCedula} readOnly className="bg-muted" />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>Cédula / RUC</Label>
-                  <Input value={selectedCustomerCedula} readOnly className="bg-muted" />
-                </div>
-              </div>
 
-              {selectedCustomerData && (
-                <div className="grid grid-cols-3 gap-4 p-4 bg-muted/30 rounded-lg text-xs">
-                  <div>
-                    <p className="font-semibold text-muted-foreground uppercase">Email</p>
-                    <p>{selectedCustomerData.email}</p>
+                {selectedCustomerData && (
+                  <div className="grid grid-cols-3 gap-4 p-4 bg-muted/30 rounded-lg text-xs">
+                    <div>
+                      <p className="font-semibold text-muted-foreground uppercase">Email</p>
+                      <p>{selectedCustomerData.email}</p>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-muted-foreground uppercase">Teléfono</p>
+                      <p>{selectedCustomerData.telefono}</p>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-muted-foreground uppercase">Dirección</p>
+                      <p>{selectedCustomerData.direccionPrincipal}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-semibold text-muted-foreground uppercase">Teléfono</p>
-                    <p>{selectedCustomerData.telefono}</p>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-muted-foreground uppercase">Dirección</p>
-                    <p>{selectedCustomerData.direccionPrincipal}</p>
-                  </div>
-                </div>
-              )}
+                )}
 
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label className="text-lg font-bold">Detalles del Pedido</Label>
-                  <Button type="button" variant="outline" size="sm" onClick={addItemRow}>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Agregar Platillo
-                  </Button>
-                </div>
-                
-                {invoiceDetails.map((item, index) => (
-                  <div key={index} className="grid grid-cols-12 gap-3 items-end border-b pb-4">
-                    <div className="col-span-5 space-y-2">
-                      <Label className="text-[10px]">Platillo</Label>
-                      <Select 
-                        value={String(item.itemId)} 
-                        onValueChange={(val) => updateItemRow(index, 'itemId', Number(val))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {dishes.map(d => (
-                            <SelectItem 
-                              key={d.id} 
-                              value={String(d.id)}
-                              disabled={selectedItemIds.includes(d.id) && item.itemId !== d.id}
-                            >
-                              {d.nombreItem} - ${d.precio.toFixed(2)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="col-span-2 space-y-2">
-                      <Label className="text-[10px]">Cant.</Label>
-                      <Input 
-                        type="number" 
-                        min="1" 
-                        value={item.cantidad} 
-                        onChange={(e) => updateItemRow(index, 'cantidad', Number(e.target.value))}
-                      />
-                    </div>
-                    <div className="col-span-2 space-y-2">
-                      <Label className="text-[10px]">Precio U.</Label>
-                      <Input value={`$${item.precioUnitario.toFixed(2)}`} readOnly className="bg-muted" />
-                    </div>
-                    <div className="col-span-2 space-y-2">
-                      <Label className="text-[10px]">Subtotal</Label>
-                      <div className="h-10 flex items-center px-3 border rounded-md bg-muted/50 font-medium">
-                        ${(item.cantidad * item.precioUnitario).toFixed(2)}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-lg font-bold">Detalles del Pedido</Label>
+                    <Button type="button" variant="outline" size="sm" onClick={addItemRow}>
+                      <PlusCircle className="mr-2 h-4 w-4" />
+                      Agregar Platillo
+                    </Button>
+                  </div>
+                  
+                  {invoiceDetails.map((item, index) => (
+                    <div key={index} className="grid grid-cols-12 gap-3 items-end border-b pb-4">
+                      <div className="col-span-5 space-y-2">
+                        <Label className="text-[10px]">Platillo</Label>
+                        <Select 
+                          value={String(item.itemId)} 
+                          onValueChange={(val) => updateItemRow(index, 'itemId', Number(val))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {dishes.map(d => (
+                              <SelectItem 
+                                key={d.id} 
+                                value={String(d.id)}
+                                disabled={selectedItemIds.includes(d.id) && item.itemId !== d.id}
+                              >
+                                {d.nombreItem} - ${d.precio.toFixed(2)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="col-span-2 space-y-2">
+                        <Label className="text-[10px]">Cant.</Label>
+                        <Input 
+                          type="number" 
+                          min="1" 
+                          value={item.cantidad} 
+                          onChange={(e) => updateItemRow(index, 'cantidad', Number(e.target.value))}
+                        />
+                      </div>
+                      <div className="col-span-2 space-y-2">
+                        <Label className="text-[10px]">Precio U.</Label>
+                        <Input value={`$${item.precioUnitario.toFixed(2)}`} readOnly className="bg-muted" />
+                      </div>
+                      <div className="col-span-2 space-y-2">
+                        <Label className="text-[10px]">Subtotal</Label>
+                        <div className="h-10 flex items-center px-3 border rounded-md bg-muted/50 font-medium">
+                          ${(item.cantidad * item.precioUnitario).toFixed(2)}
+                        </div>
+                      </div>
+                      <div className="col-span-1">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="text-destructive" 
+                          onClick={() => removeItemRow(index)}
+                          disabled={invoiceDetails.length === 1}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
-                    <div className="col-span-1">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="text-destructive" 
-                        onClick={() => removeItemRow(index)}
-                        disabled={invoiceDetails.length === 1}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-2 gap-8">
+                  <div className="space-y-2">
+                    <Label>Descripción / Observaciones</Label>
+                    <Textarea 
+                      value={invoiceDescription}
+                      onChange={(e) => setInvoiceDescription(e.target.value)}
+                      placeholder="Ej. Evento especial, pedido de oficina..."
+                      className="h-full min-h-[100px]"
+                    />
+                  </div>
+                  <div className="space-y-2 bg-muted/20 p-4 rounded-lg">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Subtotal</span>
+                      <span>{formatCurrency(currentSubtotal)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">IVA (15%)</span>
+                      <span>{formatCurrency(currentIva)}</span>
+                    </div>
+                    <Separator className="my-2" />
+                    <div className="flex justify-between font-bold text-xl">
+                      <span>Total</span>
+                      <span className="text-primary">{formatCurrency(currentTotal)}</span>
                     </div>
                   </div>
-                ))}
-              </div>
-
-              <div className="grid grid-cols-2 gap-8">
-                <div className="space-y-2">
-                  <Label>Descripción / Observaciones</Label>
-                  <Textarea 
-                    value={invoiceDescription}
-                    onChange={(e) => setInvoiceDescription(e.target.value)}
-                    placeholder="Ej. Evento especial, pedido de oficina..."
-                    className="h-full min-h-[100px]"
-                  />
-                </div>
-                <div className="space-y-2 bg-muted/20 p-4 rounded-lg">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Subtotal</span>
-                    <span>{formatCurrency(currentSubtotal)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">IVA (15%)</span>
-                    <span>{formatCurrency(currentIva)}</span>
-                  </div>
-                  <Separator className="my-2" />
-                  <div className="flex justify-between font-bold text-xl">
-                    <span>Total</span>
-                    <span className="text-primary">{formatCurrency(currentTotal)}</span>
-                  </div>
                 </div>
               </div>
-            </div>
-            <DialogFooter>
-              <DialogClose asChild><Button variant="ghost">Cancelar</Button></DialogClose>
-              <Button onClick={handleSubmitInvoice} disabled={isSubmitting}>
-                {isSubmitting ? "Generando..." : "Emitir Factura"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+              <DialogFooter>
+                <DialogClose asChild><Button variant="ghost">Cancelar</Button></DialogClose>
+                <Button onClick={handleSubmitInvoice} disabled={isSubmitting}>
+                  {isSubmitting ? "Generando..." : "Emitir Factura"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
       
       <Card className="print:shadow-none print:border-none">
