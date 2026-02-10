@@ -25,9 +25,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
 
+  // Detectamos el rol cada vez que el usuario cambia o se carga la app
   useEffect(() => {
     if (user && token) {
       setIsAuthenticated(true);
+      // Aquí se diferencia el rol para toda la aplicación
       setIsAdmin(user.rol.nombre === 'ADMINISTRADOR');
     } else {
       setIsAuthenticated(false);
@@ -74,6 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setToken(access_token);
         setUser(apiUser);
         
+        // Redirección inmediata basada en el rol recibido
         if (apiUser.rol.nombre === 'ADMINISTRADOR') {
           router.push('/admin/orders');
         } else {
@@ -81,7 +84,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         return true;
       } else {
-        console.error("GraphQL login error:", response.data.errors);
         return false;
       }
     } catch (error) {
@@ -96,7 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     router.push('/login');
   };
 
-  const register = async (userData: Omit<User, 'rol' | 'estado' | 'direccionPrincipal' | 'cedula' | 'telefono'> & { contrasena: string, direccion_principal: string, cedula: string, telefono: string }): Promise<boolean> => {
+  const register = async (userData: any): Promise<boolean> => {
     const CREATE_USER_MUTATION = `
       mutation RegisterUser($createUsuarioInput: CreateUsuarioInput!) {
         register(createUsuarioInput: $createUsuarioInput) {
@@ -122,23 +124,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             email: userData.email,
             password: userData.contrasena,
             direccionPrincipal: userData.direccion_principal,
-            rolId: 2, // Hardcoded to 2 for CLIENTE
+            rolId: 2, // Por defecto registramos como CLIENTE (ID 2)
           },
         },
       });
   
-      const apiData = response.data;
-  
-      if (apiData.errors) {
-        console.error("GraphQL registration error:", apiData.errors);
-        return false;
-      } else if (apiData.data?.register) {
+      if (response.data.errors) return false;
+      if (response.data.data?.register) {
         router.push('/login');
         return true;
       }
       return false;
     } catch (error) {
-      console.error('Error al registrar usuario:', error);
       return false;
     }
   };
