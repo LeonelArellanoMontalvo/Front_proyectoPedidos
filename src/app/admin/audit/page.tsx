@@ -12,11 +12,20 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ShieldCheck, ArrowUpDown } from 'lucide-react';
+import { ShieldCheck, ArrowUpDown, Eye, FileJson, Info } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
 
 interface AuditLog {
     id: string;
@@ -53,6 +62,12 @@ export default function AuditPage() {
   const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'ascending' | 'descending' } | null>({ key: 'fechaHora', direction: 'descending' });
   const { toast } = useToast();
 
+  // Modal State
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [selectedData, setSelectedData] = useState<any>(null);
+  const [selectedDataType, setSelectedDataType] = useState<'Anteriores' | 'Nuevos'>('Nuevos');
+  const [activeLog, setActiveLog] = useState<AuditLog | null>(null);
+
   useEffect(() => {
     const fetchAuditLogs = async () => {
         setLoading(true);
@@ -88,7 +103,11 @@ export default function AuditPage() {
         return 0;
       });
     }
-    return sortableItems.filter(log => log.usuarioCedula.toLowerCase().includes(filter.toLowerCase()));
+    return sortableItems.filter(log => 
+      log.usuarioCedula.toLowerCase().includes(filter.toLowerCase()) ||
+      log.tipoAccion.toLowerCase().includes(filter.toLowerCase()) ||
+      log.nombreTabla.toLowerCase().includes(filter.toLowerCase())
+    );
   }, [registros, filter, sortConfig]);
 
   const requestSort = (key: SortKey) => {
@@ -106,13 +125,37 @@ export default function AuditPage() {
     return sortConfig.direction === 'ascending' ? '▲' : '▼';
   };
 
+  const openDataDetail = (log: AuditLog, type: 'Anteriores' | 'Nuevos') => {
+    const data = type === 'Anteriores' ? log.datosAnteriores : log.datosNuevos;
+    if (!data) {
+        toast({
+            title: "Sin datos",
+            description: `No hay registros ${type.toLowerCase()} para esta acción.`,
+        });
+        return;
+    }
+    setActiveLog(log);
+    setSelectedData(data);
+    setSelectedDataType(type);
+    setDetailModalOpen(true);
+  };
+
+  const getActionBadge = (action: string) => {
+    const act = action.toUpperCase();
+    if (act.includes('INSERT') || act.includes('CREATE')) return <Badge className="bg-green-500">INSERT</Badge>;
+    if (act.includes('UPDATE')) return <Badge className="bg-blue-500">UPDATE</Badge>;
+    if (act.includes('DELETE')) return <Badge variant="destructive">DELETE</Badge>;
+    if (act.includes('LOGIN')) return <Badge variant="outline" className="border-primary text-primary">LOGIN</Badge>;
+    return <Badge variant="secondary">{action}</Badge>;
+  };
+
   return (
     <div className="space-y-8">
        <div className="flex items-center gap-4">
         <ShieldCheck className="h-10 w-10 text-primary" />
         <div>
           <h1 className="font-headline text-4xl font-bold">Registros de Auditoría</h1>
-          <p className="text-muted-foreground">Consulta las acciones realizadas en el sistema.</p>
+          <p className="text-muted-foreground">Consulta las acciones realizadas en el sistema con detalle granular.</p>
         </div>
       </div>
       
@@ -121,10 +164,10 @@ export default function AuditPage() {
           <CardTitle>Historial de Cambios</CardTitle>
            <div className="pt-4">
              <Input 
-                placeholder="Filtrar por Cédula de usuario..." 
+                placeholder="Filtrar por Cédula, Acción o Tabla..." 
                 value={filter}
                 onChange={(e) => setFilter(e.target.value)}
-                className="max-w-sm"
+                className="max-w-md"
               />
            </div>
         </CardHeader>
@@ -138,8 +181,8 @@ export default function AuditPage() {
                 <TableHead><Button variant="ghost" onClick={() => requestSort('nombreTabla')}>Tabla {getSortIcon('nombreTabla')}</Button></TableHead>
                 <TableHead><Button variant="ghost" onClick={() => requestSort('registroId')}>ID Registro {getSortIcon('registroId')}</Button></TableHead>
                 <TableHead><Button variant="ghost" onClick={() => requestSort('fechaHora')}>Fecha {getSortIcon('fechaHora')}</Button></TableHead>
-                <TableHead>Datos Anteriores</TableHead>
-                <TableHead>Datos Nuevos</TableHead>
+                <TableHead className="text-center">Ant.</TableHead>
+                <TableHead className="text-center">Nuevos</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -153,20 +196,64 @@ export default function AuditPage() {
                  ))
               ) : sortedAndFilteredRegistros.map((r) => (
                 <TableRow key={r.id}>
-                  <TableCell>{r.id}</TableCell>
+                  <TableCell className="text-xs font-mono">{r.id}</TableCell>
                   <TableCell>{r.usuarioCedula}</TableCell>
-                  <TableCell>{r.tipoAccion}</TableCell>
-                  <TableCell>{r.nombreTabla}</TableCell>
-                  <TableCell>{r.registroId}</TableCell>
-                  <TableCell>{new Date(r.fechaHora).toLocaleString()}</TableCell>
-                  <TableCell><pre className="text-xs whitespace-pre-wrap max-w-xs">{JSON.stringify(r.datosAnteriores, null, 2)}</pre></TableCell>
-                  <TableCell><pre className="text-xs whitespace-pre-wrap max-w-xs">{JSON.stringify(r.datosNuevos, null, 2)}</pre></TableCell>
+                  <TableCell>{getActionBadge(r.tipoAccion)}</TableCell>
+                  <TableCell>
+                    <span className="font-medium text-muted-foreground">{r.nombreTabla}</span>
+                  </TableCell>
+                  <TableCell className="font-mono">{r.registroId || 'N/A'}</TableCell>
+                  <TableCell className="text-xs">{new Date(r.fechaHora).toLocaleString()}</TableCell>
+                  <TableCell className="text-center">
+                    <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        disabled={!r.datosAnteriores}
+                        onClick={() => openDataDetail(r, 'Anteriores')}
+                    >
+                        <FileJson className={`h-4 w-4 ${r.datosAnteriores ? 'text-blue-500' : 'text-muted-foreground/30'}`} />
+                    </Button>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        disabled={!r.datosNuevos}
+                        onClick={() => openDataDetail(r, 'Nuevos')}
+                    >
+                        <Eye className={`h-4 w-4 ${r.datosNuevos ? 'text-primary' : 'text-muted-foreground/30'}`} />
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
+
+      <Dialog open={detailModalOpen} onOpenChange={setDetailModalOpen}>
+        <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+                <Info className="h-5 w-5 text-primary" />
+                Detalle de Datos {selectedDataType}
+            </DialogTitle>
+            <DialogDescription>
+                Acción: {activeLog?.tipoAccion} | Tabla: {activeLog?.nombreTabla} | ID: {activeLog?.registroId}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <ScrollArea className="flex-1 mt-4 rounded-md border bg-slate-950 p-6">
+            <pre className="text-sm font-mono text-slate-50 leading-relaxed whitespace-pre-wrap">
+              {JSON.stringify(selectedData, null, 2)}
+            </pre>
+          </ScrollArea>
+          
+          <div className="mt-4 flex justify-end">
+            <Button onClick={() => setDetailModalOpen(false)}>Cerrar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
