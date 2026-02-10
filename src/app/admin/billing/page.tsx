@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
@@ -52,7 +51,7 @@ export default function BillingPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [customers, setCustomers] = useState<User[]>([]);
   const [dishes, setDishes] = useState<Dish[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [filter, setFilter] = useState('');
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -65,7 +64,6 @@ export default function BillingPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchInitialData = async () => {
-    setLoading(true);
     try {
       const tokenString = window.localStorage.getItem('access_token');
       const token = tokenString ? JSON.parse(tokenString) : null;
@@ -99,10 +97,8 @@ export default function BillingPage() {
     }
   };
 
-  const [initialLoading, setInitialLoading] = useState(true);
-
   useEffect(() => {
-    fetchInitialData().finally(() => setInitialLoading(false));
+    fetchInitialData();
   }, [toast]);
 
   const filteredInvoices = invoices.filter(inv => 
@@ -333,7 +329,7 @@ export default function BillingPage() {
                       <span>{formatCurrency(currentSubtotal)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">IVA (15%)</span>
+                      <span className="text-muted-foreground">IVA (12%)</span>
                       <span>{formatCurrency(currentIva)}</span>
                     </div>
                     <Separator className="my-2" />
@@ -487,7 +483,7 @@ export default function BillingPage() {
                       <span>{formatCurrency(Number(selectedInvoice.montoSubtotal))}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">IVA (15%)</span>
+                      <span className="text-muted-foreground">IVA (12%)</span>
                       <span>{formatCurrency(Number(selectedInvoice.montoIva))}</span>
                     </div>
                     <div className="flex justify-between font-bold text-lg pt-2 border-t mt-2">

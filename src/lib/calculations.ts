@@ -20,9 +20,9 @@ export const calculateCartSubtotal = (items: CartItem[]): number => {
 };
 
 /**
- * Calcula el valor del impuesto (IVA). Por defecto 15% (Ecuador).
+ * Calcula el valor del impuesto (IVA). Por defecto 12% (Ecuador).
  */
-export const calculateIVA = (amount: number, rate: number = 0.15): number => {
+export const calculateIVA = (amount: number, rate: number = 0.12): number => {
   return amount * rate;
 };
 
