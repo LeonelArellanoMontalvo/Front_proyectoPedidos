@@ -66,7 +66,7 @@ export default function ClientInvoicePrintPage() {
 
   return (
     <ProtectedRoute allowedRoles={['CLIENTE']}>
-      <div className="min-h-screen bg-muted/30 pb-20">
+      <div className="min-h-screen bg-muted/30 pb-20 print:bg-white print:min-h-0 print:pb-0">
         <div className="sticky top-0 z-50 w-full bg-background border-b px-4 py-3 print:hidden shadow-sm">
           <div className="container mx-auto flex items-center justify-between">
             <Button variant="ghost" onClick={() => router.back()}>
@@ -83,16 +83,16 @@ export default function ClientInvoicePrintPage() {
           </div>
         </div>
 
-        <div className="container mx-auto px-4 py-8">
-          <Card id="printable-invoice" className="max-w-3xl mx-auto shadow-none border-none sm:border print:m-0 print:p-0 print:w-full">
+        <div className="container mx-auto px-4 py-8 print:p-0">
+          <Card id="printable-invoice" className="max-w-3xl mx-auto shadow-none border-none sm:border print:m-0 print:p-0 print:w-full print:border-none">
             <CardContent className="p-8 sm:p-12 print:p-0">
               <div className="flex justify-between items-start mb-8">
                 <div>
                   <h1 className="text-3xl font-bold text-primary mb-1">Pedido Listo</h1>
-                  <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider text-[10px]">Documento Electrónico de Compra</p>
+                  <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Documento Electrónico de Compra</p>
                 </div>
                 <div className="text-right">
-                  <div className="bg-primary/10 px-4 py-2 rounded-lg inline-block mb-2">
+                  <div className="bg-primary/10 px-4 py-2 rounded-lg inline-block mb-2 print:border print:border-primary/20">
                       <p className="font-mono font-bold text-primary text-xl">{invoice.numeroFactura}</p>
                   </div>
                   <p className="text-sm text-muted-foreground">{new Date(invoice.fechaFactura).toLocaleString()}</p>
@@ -114,16 +114,16 @@ export default function ClientInvoicePrintPage() {
                 </div>
               </div>
 
-              <div className="border rounded-lg overflow-hidden mb-8">
+              <div className="border rounded-lg overflow-hidden mb-8 print:border-gray-300">
                 <table className="w-full text-sm">
-                  <thead className="bg-muted/50 border-b">
+                  <thead className="bg-muted/50 border-b print:bg-gray-100">
                     <tr>
                       <th className="px-4 py-3 text-left font-bold">Cant.</th>
                       <th className="px-4 py-3 text-left font-bold">Descripción</th>
                       <th className="px-4 py-3 text-right font-bold">Total</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y">
+                  <tbody className="divide-y print:divide-gray-200">
                     {invoice.detalles.map((det) => (
                       <tr key={det.id}>
                         <td className="px-4 py-4">{det.cantidad}</td>
@@ -136,7 +136,7 @@ export default function ClientInvoicePrintPage() {
               </div>
 
               <div className="flex justify-end mb-12">
-                <div className="w-full max-w-[280px] space-y-3 bg-muted/20 p-6 rounded-xl border border-muted">
+                <div className="w-full max-w-[280px] space-y-3 bg-muted/20 p-6 rounded-xl border border-muted print:bg-gray-50 print:border-gray-200">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Subtotal:</span>
                     <span>{formatCurrency(Number(invoice.montoSubtotal))}</span>
@@ -153,7 +153,7 @@ export default function ClientInvoicePrintPage() {
                 </div>
               </div>
 
-              <div className="text-center text-[10px] text-muted-foreground border-t pt-8 space-y-2">
+              <div className="text-center text-[10px] text-muted-foreground border-t pt-8 space-y-2 print:border-gray-200">
                 <p className="font-bold uppercase tracking-widest text-primary">¡Gracias por preferir Pedido Listo!</p>
                 <p>Conserve este documento como respaldo de su compra.</p>
                 <p className="italic">Este es un comprobante electrónico generado por nuestro sistema.</p>
@@ -164,19 +164,28 @@ export default function ClientInvoicePrintPage() {
 
         <style jsx global>{`
           @media print {
-            body { background-color: white !important; }
-            .print\:hidden { display: none !important; }
+            @page {
+              margin: 0;
+              size: auto;
+            }
+            body {
+              background: white !important;
+              margin: 0;
+              padding: 0;
+            }
+            .print\:hidden {
+              display: none !important;
+            }
             #printable-invoice {
-              border: none !important;
-              box-shadow: none !important;
               width: 100% !important;
               margin: 0 !important;
-              padding: 0 !important;
-              position: absolute;
-              top: 0;
-              left: 0;
+              padding: 2cm !important;
+              border: none !important;
+              box-shadow: none !important;
             }
-            @page { margin: 1.5cm; }
+            .min-h-screen {
+              min-height: auto !important;
+            }
           }
         `}</style>
       </div>
