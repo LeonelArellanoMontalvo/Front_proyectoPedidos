@@ -33,7 +33,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/select';
+} from '@/components/ui/select';
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -95,12 +95,14 @@ export default function BillingPage() {
         description: "No se pudo sincronizar con la API.",
       });
     } finally {
-      setLoading(false);
+      setInitialLoading(false);
     }
   };
 
+  const [initialLoading, setInitialLoading] = useState(true);
+
   useEffect(() => {
-    fetchInitialData();
+    fetchInitialData().finally(() => setInitialLoading(false));
   }, [toast]);
 
   const filteredInvoices = invoices.filter(inv => 
@@ -382,7 +384,7 @@ export default function BillingPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {loading ? (
+                {initialLoading ? (
                   Array.from({ length: 5 }).map((_, index) => (
                     <TableRow key={index}>
                       <TableCell colSpan={6}><Skeleton className="h-8 w-full" /></TableCell>
