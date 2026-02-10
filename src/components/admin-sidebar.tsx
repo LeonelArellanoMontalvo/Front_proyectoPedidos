@@ -22,16 +22,14 @@ export default function AdminSidebar() {
   ];
 
   return (
-    <aside className="w-64 flex-shrink-0 border-r bg-card text-card-foreground">
+    <aside className="w-64 flex-shrink-0 border-r bg-card text-card-foreground print:hidden">
         <div className="flex h-full flex-col">
             <div className="h-16 flex items-center px-6 border-b">
                <Logo />
             </div>
             <nav className="flex-1 space-y-2 p-4">
             {navItems.map((item) => {
-                // Filtrar por rol si es necesario
                 if (item.roles && !item.roles.includes(isAdmin ? 'ADMINISTRADOR' : 'VENDEDOR')) {
-                    // Si el usuario es vendedor y el item es solo para admin, no lo mostramos
                     if (!isAdmin && item.roles.includes('ADMINISTRADOR') && !item.roles.includes('VENDEDOR')) {
                         return null;
                     }

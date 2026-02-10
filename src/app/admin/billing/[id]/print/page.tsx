@@ -61,7 +61,7 @@ export default function AdminInvoicePrintPage() {
   if (!invoice) return null;
 
   return (
-    <div className="min-h-screen bg-gray-100 print:bg-white">
+    <div className="min-h-screen bg-gray-100 print:bg-white print:m-0">
       {/* 1. INTERFAZ DE VISTA PREVIA (SOLO PANTALLA) */}
       <div className="print:hidden">
         <div className="sticky top-0 z-50 w-full bg-white border-b px-4 py-3 shadow-sm">
@@ -148,7 +148,7 @@ export default function AdminInvoicePrintPage() {
       </div>
 
       {/* 2. FORMATO DE IMPRESIÓN (SOLO IMPRESORA - DOCUMENTO SIMPLE) */}
-      <div className="hidden print:block p-0 m-0 text-black bg-white">
+      <div className="hidden print:block p-0 m-0 text-black bg-white w-full">
         <div className="border-b-2 border-black pb-4 mb-6">
           <h1 className="text-2xl font-bold">PEDIDO LISTO</h1>
           <p className="text-sm">RUC: 1005299489001 | Tel: (06) 2645-123</p>
@@ -205,22 +205,19 @@ export default function AdminInvoicePrintPage() {
             </div>
           </div>
         </div>
-
-        <div className="mt-20 flex justify-around">
-          <div className="border-t border-black w-40 text-center pt-1 text-xs font-bold">FIRMA AUTORIZADA</div>
-          <div className="border-t border-black w-40 text-center pt-1 text-xs font-bold">RECIBÍ CONFORME</div>
-        </div>
         
-        <p className="mt-10 text-center text-[10px] text-gray-400">Documento sin valor tributario - Solo uso informativo interno</p>
+        <p className="mt-10 text-center text-[10px] text-gray-400 italic">Documento generado electrónicamente - Pedido Listo ©</p>
       </div>
 
       <style jsx global>{`
         @media print {
           @page {
-            margin: 1.5cm;
+            margin: 1cm;
             size: A4;
           }
-          body {
+          html, body {
+            height: auto !important;
+            overflow: visible !important;
             background: white !important;
           }
           .print\:hidden {
@@ -228,6 +225,11 @@ export default function AdminInvoicePrintPage() {
           }
           .hidden.print\:block {
             display: block !important;
+          }
+          /* Asegurar que el contenido principal ocupe todo el ancho */
+          div[class*="flex-1"] {
+            padding: 0 !important;
+            margin: 0 !important;
           }
         }
       `}</style>

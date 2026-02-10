@@ -63,7 +63,7 @@ export default function ClientInvoicePrintPage() {
 
   return (
     <ProtectedRoute allowedRoles={['CLIENTE']}>
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-white print:m-0">
         
         {/* 1. VISTA PREVIA PROFESIONAL (SOLO PANTALLA) */}
         <div className="print:hidden min-h-screen bg-gray-50">
@@ -152,7 +152,7 @@ export default function ClientInvoicePrintPage() {
         </div>
 
         {/* 2. FORMATO DE DOCUMENTO SIMPLE (SOLO IMPRESIÓN) */}
-        <div className="hidden print:block text-black text-sm p-0 m-0">
+        <div className="hidden print:block text-black text-sm p-0 m-0 w-full bg-white">
            <div className="border-b border-black pb-4 mb-6">
               <h1 className="text-xl font-bold">PEDIDO LISTO - COMPROBANTE DE COMPRA</h1>
               <p>Ibarra, Ecuador | Documento Digital</p>
@@ -217,7 +217,9 @@ export default function ClientInvoicePrintPage() {
               margin: 1cm;
               size: auto;
             }
-            body {
+            html, body {
+              height: auto !important;
+              overflow: visible !important;
               background-color: white !important;
             }
             .print\:hidden {
