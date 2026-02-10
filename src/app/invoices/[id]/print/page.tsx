@@ -32,6 +32,8 @@ export default function ClientInvoicePrintPage() {
         
         if (found) {
           setInvoice(found);
+          // Establecer el título del documento para que el nombre del PDF sea el número de factura
+          document.title = found.numeroFactura;
         } else {
           toast({ variant: "destructive", title: "Error", description: "No se encontró la factura." });
           router.push("/invoices");
@@ -227,6 +229,15 @@ export default function ClientInvoicePrintPage() {
             }
             .hidden.print\:block {
               display: block !important;
+            }
+            /* Ocultar elementos de layout global */
+            header, nav, aside {
+              display: none !important;
+            }
+            main {
+              width: 100% !important;
+              padding: 0 !important;
+              margin: 0 !important;
             }
           }
         `}</style>

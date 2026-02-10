@@ -31,6 +31,8 @@ export default function AdminInvoicePrintPage() {
         
         if (found) {
           setInvoice(found);
+          // Establecer el título del documento para que el nombre del PDF sea el número de factura
+          document.title = found.numeroFactura;
         } else {
           toast({ variant: "destructive", title: "Error", description: "No se encontró la factura." });
           router.push("/admin/billing");
@@ -226,10 +228,11 @@ export default function AdminInvoicePrintPage() {
           .hidden.print\:block {
             display: block !important;
           }
-          /* Asegurar que el contenido principal ocupe todo el ancho */
-          div[class*="flex-1"] {
+          /* Asegurar que el contenido principal ocupe todo el ancho al ocultar sidebar y header */
+          div[class*="flex-1"], main {
             padding: 0 !important;
             margin: 0 !important;
+            width: 100% !important;
           }
         }
       `}</style>
